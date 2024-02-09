@@ -392,5 +392,17 @@ mod tests {
         let path = path.unwrap_or_chain_default(Chain::from_id(41));
         assert!(path.as_ref().ends_with("reth/tevmtestnet"), "{:?}", path);
         }
+
+        #[cfg(feature = "telos")] {
+        let path = MaybePlatformPath::<DataDirPath>::default();
+        let path = path.unwrap_or_chain_default(Chain::from_id(40));
+        assert!(path.as_ref().ends_with("reth/tevmmainnet-base"), "{:?}", path);
+        }
+
+        #[cfg(feature = "telos")] {
+        let path = MaybePlatformPath::<DataDirPath>::default();
+        let path = path.unwrap_or_chain_default(Chain::from_id(41));
+        assert!(path.as_ref().ends_with("reth/tevmtestnet-base"), "{:?}", path);
+        }
     }
 }

@@ -221,6 +221,63 @@ pub static TEVMTESTNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
     .into()
 });
 
+#[cfg(feature = "telos")]
+/// The Tevmmainnet-base spec
+pub static TEVMMAINNET_BASE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+    ChainSpec {
+        chain: Chain::from_id(40),
+        genesis: serde_json::from_str(include_str!("../../res/genesis/tevmmainnet_base.json"))
+            .expect("Can't deserialize Tevmmainnet-base genesis json"),
+        genesis_hash: Some(b256!(
+            "757720a8e51c63ef1d4f907d6569dacaa965e91c2661345902de18af11f81063"
+        )),
+        hardforks: BTreeMap::from([
+            (Hardfork::Frontier, ForkCondition::Block(180698823)),
+            (Hardfork::Homestead, ForkCondition::Block(180698823)),
+            (Hardfork::Dao, ForkCondition::Block(180698823)),
+            (Hardfork::Tangerine, ForkCondition::Block(180698823)),
+            (Hardfork::SpuriousDragon, ForkCondition::Block(180698823)),
+            (Hardfork::Byzantium, ForkCondition::Block(180698823)),
+            (Hardfork::Constantinople, ForkCondition::Block(180698823)),
+            (Hardfork::Petersburg, ForkCondition::Block(180698823)),
+            (Hardfork::Istanbul, ForkCondition::Block(180698823)),
+            (Hardfork::MuirGlacier, ForkCondition::Block(180698823)),
+            (Hardfork::Berlin, ForkCondition::Block(180698823)),
+        ]),
+        ..Default::default()
+    }
+    .into()
+});
+
+#[cfg(feature = "telos")]
+/// The Tevmtestnet-base spec
+/// TODO: Block hash not finalized yet, need to modify the parent hash
+pub static TEVMTESTNET_BASE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+    ChainSpec {
+        chain: Chain::from_id(41),
+        genesis: serde_json::from_str(include_str!("../../res/genesis/tevmtestnet_base.json"))
+            .expect("Can't deserialize Tevmtestnet-base genesis json"),
+        genesis_hash: Some(b256!(
+            "a6da3143bdeab454a923ac47589700ebe75d734f26e1f9201caa9b7268045d02"
+        )),
+        hardforks: BTreeMap::from([
+            (Hardfork::Frontier, ForkCondition::Block(136393756)),
+            (Hardfork::Homestead, ForkCondition::Block(136393756)),
+            (Hardfork::Dao, ForkCondition::Block(136393756)),
+            (Hardfork::Tangerine, ForkCondition::Block(136393756)),
+            (Hardfork::SpuriousDragon, ForkCondition::Block(136393756)),
+            (Hardfork::Byzantium, ForkCondition::Block(136393756)),
+            (Hardfork::Constantinople, ForkCondition::Block(136393756)),
+            (Hardfork::Petersburg, ForkCondition::Block(136393756)),
+            (Hardfork::Istanbul, ForkCondition::Block(136393756)),
+            (Hardfork::MuirGlacier, ForkCondition::Block(136393756)),
+            (Hardfork::Berlin, ForkCondition::Block(136393756)),
+        ]),
+        ..Default::default()
+    }
+    .into()
+});
+
 /// The Holesky spec
 pub static HOLESKY: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
     ChainSpec {
@@ -733,7 +790,13 @@ impl ChainSpec {
             };
 
         Header {
+            #[cfg(feature = "telos")]
+            parent_hash: self.genesis.parent_hash,
+            #[cfg(not(feature = "telos"))]
             parent_hash: B256::ZERO,
+            #[cfg(feature = "telos")]
+            number: self.genesis.number,
+            #[cfg(not(feature = "telos"))]
             number: 0,
             transactions_root: EMPTY_TRANSACTIONS,
             ommers_hash: EMPTY_OMMER_ROOT_HASH,
@@ -1692,7 +1755,7 @@ mod tests {
         MAINNET, SEPOLIA, U256,
     };
     #[cfg(feature = "telos")]
-    use crate::{TEVMMAINNET, TEVMTESTNET};
+    use crate::{TEVMMAINNET, TEVMTESTNET, TEVMMAINNET_BASE, TEVMTESTNET_BASE};
     use alloy_chains::NamedChain;
     use alloy_rlp::Encodable;
     use bytes::BytesMut;
@@ -2370,6 +2433,26 @@ Post-merge hard forks (timestamp based):
     fn tevmtestnet_forkids() {
         test_fork_ids(
             &TEVMTESTNET,
+            &[
+            ],
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "telos")]
+    fn tevmmainnet_base_forkids() {
+        test_fork_ids(
+            &TEVMMAINNET_BASE,
+            &[
+            ],
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "telos")]
+    fn tevmtestnet_base_forkids() {
+        test_fork_ids(
+            &TEVMTESTNET_BASE,
             &[
             ],
         );

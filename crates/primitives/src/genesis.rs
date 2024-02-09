@@ -56,6 +56,13 @@ pub struct Genesis {
     /// The genesis header blob gas used
     #[serde(skip_serializing_if = "Option::is_none", with = "u64_hex_or_decimal_opt")]
     pub blob_gas_used: Option<u64>,
+    #[cfg(feature = "telos")]
+    #[serde(with = "u64_hex_or_decimal")]
+    /// The genesis header height number.
+    pub number: u64,
+    #[cfg(feature = "telos")]
+    /// The genesis header parent hash.
+    pub parent_hash: B256,
 }
 
 impl Genesis {

@@ -6,7 +6,7 @@ pub use spec::{
     MAINNET, SEPOLIA,
 };
 #[cfg(feature = "telos")]
-pub use spec::{TEVMMAINNET, TEVMTESTNET};
+pub use spec::{TEVMMAINNET, TEVMTESTNET, TEVMMAINNET_BASE, TEVMTESTNET_BASE};
 #[cfg(feature = "optimism")]
 pub use spec::{BASE_GOERLI, BASE_MAINNET, BASE_SEPOLIA, OP_GOERLI};
 

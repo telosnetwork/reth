@@ -140,6 +140,17 @@ pub const TEVMMAINNET_GENESIS_HASH: B256 =
 pub const TEVMTESTNET_GENESIS_HASH: B256 =
     b256!("b25034033c9ca7a40e879ddcc29cf69071a22df06688b5fe8cc2d68b4e0528f9");
 
+#[cfg(feature = "telos")]
+/// Tevmmainnet base genesis hash.
+pub const TEVMMAINNET_BASE_GENESIS_HASH: B256 =
+    b256!("757720a8e51c63ef1d4f907d6569dacaa965e91c2661345902de18af11f81063");
+
+#[cfg(feature = "telos")]
+/// Tevmtestnet base genesis hash.
+/// TODO: Block hash not finalized yet, need to modify the parent hash
+pub const TEVMTESTNET_BASE_GENESIS_HASH: B256 =
+    b256!("a6da3143bdeab454a923ac47589700ebe75d734f26e1f9201caa9b7268045d02");
+
 /// Holesky genesis hash.
 pub const HOLESKY_GENESIS_HASH: B256 =
     b256!("ff9006519a8ce843ac9c28549d24211420b546e12ce2d170c77a8cca7964f23d");

@@ -54,7 +54,6 @@ use std::{
     sync::{mpsc, Arc},
     time::{Duration, Instant},
 };
-use revm::interpreter::instructions::bitwise::not;
 use tracing::{debug, warn};
 
 /// A [`DatabaseProvider`] that holds a read-only database transaction.

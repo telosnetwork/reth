@@ -55,7 +55,7 @@ pub use chain::{
 };
 #[cfg(feature = "telos")]
 pub use chain::{
-    TEVMMAINNET, TEVMTESTNET,
+    TEVMMAINNET, TEVMTESTNET, TEVMMAINNET_BASE, TEVMTESTNET_BASE
 };
 pub use compression::*;
 pub use constants::{
@@ -64,7 +64,7 @@ pub use constants::{
 };
 #[cfg(feature = "telos")]
 pub use constants::{
-    TEVMMAINNET_GENESIS_HASH, TEVMTESTNET_GENESIS_HASH,
+    TEVMMAINNET_GENESIS_HASH, TEVMTESTNET_GENESIS_HASH, TEVMMAINNET_BASE_GENESIS_HASH, TEVMTESTNET_BASE_GENESIS_HASH,
 };
 pub use error::{GotExpected, GotExpectedBoxed};
 pub use genesis::{ChainConfig, Genesis, GenesisAccount, GenesisAllocator};

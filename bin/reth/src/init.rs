@@ -85,6 +85,9 @@ pub fn init_genesis<DB: Database>(
 
     // insert sync stage
     for stage in StageId::ALL.iter() {
+        #[cfg(feature = "telos")]
+        tx.put::<tables::SyncStage>(stage.to_string(), reth_primitives::stage::StageCheckpoint::new(genesis.number))?;
+        #[cfg(not(feature = "telos"))]
         tx.put::<tables::SyncStage>(stage.to_string(), Default::default())?;
     }
 
@@ -209,11 +212,20 @@ pub fn insert_genesis_header<DB: Database>(
 ) -> ProviderResult<()> {
     let header = chain.sealed_genesis_header();
 
+    #[cfg(feature = "telos")] {
+    tx.put::<tables::CanonicalHeaders>(header.number, header.hash)?;
+    tx.put::<tables::HeaderNumbers>(header.hash, header.number)?;
+    tx.put::<tables::BlockBodyIndices>(header.number, Default::default())?;
+    tx.put::<tables::HeaderTD>(header.number, header.difficulty.into())?;
+    tx.put::<tables::Headers>(header.number, header.header)?;
+    }
+    #[cfg(not(feature = "telos"))] {
     tx.put::<tables::CanonicalHeaders>(0, header.hash)?;
     tx.put::<tables::HeaderNumbers>(header.hash, 0)?;
     tx.put::<tables::BlockBodyIndices>(0, Default::default())?;
     tx.put::<tables::HeaderTD>(0, header.difficulty.into())?;
     tx.put::<tables::Headers>(0, header.header)?;
+    }
 
     Ok(())
 }
@@ -234,7 +246,7 @@ mod tests {
     };
     #[cfg(feature = "telos")]
     use reth_primitives::{
-        TEVMMAINNET, TEVMMAINNET_GENESIS_HASH, TEVMTESTNET, TEVMTESTNET_GENESIS_HASH
+        TEVMMAINNET, TEVMMAINNET_GENESIS_HASH, TEVMTESTNET, TEVMTESTNET_GENESIS_HASH, TEVMMAINNET_BASE, TEVMMAINNET_BASE_GENESIS_HASH, TEVMTESTNET_BASE, TEVMTESTNET_BASE_GENESIS_HASH
     };
     use std::collections::HashMap;
 
@@ -293,6 +305,27 @@ mod tests {
 
         // actual, expected
         assert_eq!(genesis_hash, TEVMTESTNET_GENESIS_HASH);
+    }
+
+    
+    #[test]
+    #[cfg(feature = "telos")]
+    fn success_init_genesis_tevmmainnet_base() {
+        let db = create_test_rw_db();
+        let genesis_hash = init_genesis(db, TEVMMAINNET_BASE.clone()).unwrap();
+
+        // actual, expected
+        assert_eq!(genesis_hash, TEVMMAINNET_BASE_GENESIS_HASH);
+    }
+
+    #[test]
+    #[cfg(feature = "telos")]
+    fn success_init_genesis_tevmtestnet_base() {
+        let db = create_test_rw_db();
+        let genesis_hash = init_genesis(db, TEVMTESTNET_BASE.clone()).unwrap();
+
+        // actual, expected
+        assert_eq!(genesis_hash, TEVMTESTNET_BASE_GENESIS_HASH);
     }
 
     #[test]
