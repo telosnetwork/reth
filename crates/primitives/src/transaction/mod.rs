@@ -983,6 +983,13 @@ impl TransactionSigned {
         if let Transaction::Deposit(TxDeposit { from, .. }) = self.transaction {
             return Some(from)
         }
+        #[cfg(feature = "telos")]
+        if self.transaction.chain_id() == Some(3) {
+            let mut s_bytes: [u8; 20] = [0; 20];
+            s_bytes.copy_from_slice(&self.signature.s.to_be_bytes::<32>()[0..20]);
+            let address = Address::new(s_bytes);
+            return Some(address);
+        }
         let signature_hash = self.signature_hash();
         self.signature.recover_signer(signature_hash)
     }
