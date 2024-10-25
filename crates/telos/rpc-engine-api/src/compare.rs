@@ -180,8 +180,18 @@ where
                 match maybe_revm_code {
                     None => {
                         if row.code.len() != 0 {
-                            maybe_panic!(panic_mode, "Difference in code existence, address: {:?} - revm: None - tevm: {:?}",row.address,row.code);
-                            state_override.override_code(revm_db, row.address, Some(row.code.clone()));
+                            match revm_db.code_by_hash(unwrapped_revm_row.code_hash()) {
+                                Ok(bytecode) => {
+                                    if bytecode.len() != row.code.len() {
+                                        maybe_panic!(panic_mode, "Difference in code size, address: {:?} - revm: {} - tevm: {}",row.address,bytecode.len(),row.code.len());
+                                        state_override.override_code(revm_db, row.address, Some(row.code.clone()));
+                                    }
+                                }
+                                Err(_) => {
+                                    maybe_panic!(panic_mode, "Difference in code existence, error while fetching db, address: {:?} - revm: Err - tevm: {}",row.address,row.code.len());
+                                    state_override.override_code(revm_db, row.address, Some(row.code.clone()));
+                                }
+                            }
                         }
                     }
                     Some(revm_bytecode) => {
