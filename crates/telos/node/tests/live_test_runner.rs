@@ -249,7 +249,7 @@ pub async fn test_double_approve_erc20<T>(
     let input_data = Bytes::from(encoded_data);
 
     // Build approve transaction
-    let tx = TransactionRequest::default()
+    let mut tx = TransactionRequest::default()
         .to(erc20_contract_address)
         .with_input(input_data)
         .nonce(nonce)
@@ -261,10 +261,27 @@ pub async fn test_double_approve_erc20<T>(
     // call approve
     let tx_result = provider.send_transaction(tx.clone()).await;
     assert!(tx_result.is_ok());
+    let receipt1 = tx_result.unwrap().get_receipt().await;
+    assert!(receipt1.is_ok());
+
+    let nonce = provider.get_transaction_count(sender_address).await.unwrap();
+    tx.nonce = Some(nonce);
 
     // repeat approve
     let tx_result = provider.send_transaction(tx.clone()).await;
-    assert!(tx_result.is_err());
+    assert!(tx_result.is_ok());
+
+    let receipt2 = tx_result.unwrap().get_receipt().await;
+    assert!(receipt2.is_ok());
+
+    let block_number = receipt2.unwrap().block_number.unwrap();
+
+    // make sure the block is included
+    while let Some(block) = provider.get_block_by_number(Latest, false).await.unwrap() {
+        if block.header.number == block_number {
+            break;
+        }
+    }
 }
 
 pub async fn test_incorrect_rlp<T>(
