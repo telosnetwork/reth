@@ -13,7 +13,7 @@ use reth::rpc::types::{BlockTransactionsKind, TransactionInput};
 use reqwest::{Url};
 use tracing::info;
 use reth::primitives::BlockId;
-
+use reth::primitives::BlockNumberOrTag::Latest;
 use reth::primitives::revm_primitives::bytes::Bytes;
 use reth::revm::primitives::{AccessList, AccessListItem};
 
@@ -192,17 +192,20 @@ where
     assert!(tx_result.is_err());
 }
 
-// test_double_approve_erc20 sends 2 transactions for approve on the ERC20 token and asserts that only once it is success
-pub async fn test_double_approve_erc20<T>(provider: impl Provider<T, Ethereum> + Send + Sync, sender_address: Address)
-where
-    T: Transport + Clone + Debug,
 
+// test_double_approve_erc20 sends 2 transactions for approve on the ERC20 token and asserts that only once it is success
+pub async fn test_double_approve_erc20<T>(
+    provider: impl Provider<T, Ethereum> + Send + Sync,
+    sender_address: Address,
+) where
+    T: Transport + Clone + Debug,
 {
     let nonce = provider.get_transaction_count(sender_address).await.unwrap();
     let chain_id = provider.get_chain_id().await.unwrap();
     let gas_price = provider.get_gas_price().await.unwrap();
 
-    let erc20_contract_address: Address = "0x49f54c5e2301eb9256438123e80762470c2c7ec2".parse().unwrap();
+    let erc20_contract_address: Address =
+        "0x49f54c5e2301eb9256438123e80762470c2c7ec2".parse().unwrap();
     let spender: Address = "0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4".parse().unwrap();
     let function_signature = "approve(address,uint256)";
     let amount: U256 = U256::from(0);
@@ -215,7 +218,7 @@ where
     let input_data = Bytes::from(encoded_data);
 
     // Build approve transaction
-    let tx = TransactionRequest::default()
+    let mut tx = TransactionRequest::default()
         .to(erc20_contract_address)
         .with_input(input_data)
         .nonce(nonce)
@@ -227,8 +230,26 @@ where
     // call approve
     let tx_result = provider.send_transaction(tx.clone()).await;
     assert!(tx_result.is_ok());
+    let receipt1 = tx_result.unwrap().get_receipt().await;
+    assert!(receipt1.is_ok());
+
+    let nonce = provider.get_transaction_count(sender_address).await.unwrap();
+    tx.nonce = Some(nonce);
 
     // repeat approve
     let tx_result = provider.send_transaction(tx.clone()).await;
-    assert!(tx_result.is_err());
+    assert!(tx_result.is_ok());
+
+    let receipt2 = tx_result.unwrap().get_receipt().await;
+    assert!(receipt2.is_ok());
+
+    let block_number = receipt2.unwrap().block_number.unwrap();
+
+    // make sure the block is included
+    while let Some(block) = provider.get_block_by_number(Latest, false).await.unwrap() {
+        if block.header.number == block_number {
+            break;
+        }
+    }
 }
+
