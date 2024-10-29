@@ -1,21 +1,23 @@
 use alloy_consensus::{Signed, TxLegacy};
-use std::thread::sleep;
-use std::time::Duration;
 use alloy_contract::private::Transport;
 use alloy_network::{Ethereum, ReceiptResponse, TransactionBuilder};
-use alloy_primitives::{keccak256, Address, Signature, B256, U256};
+use alloy_primitives::{hex, keccak256, Address, Signature, B256, U256};
 use alloy_provider::network::EthereumWallet;
 use alloy_provider::{Provider, ProviderBuilder};
-use alloy_rpc_types::{TransactionRequest};
 use alloy_rpc_types::BlockNumberOrTag::Latest;
+use alloy_rpc_types::TransactionRequest;
 use alloy_signer_local::PrivateKeySigner;
 use alloy_sol_types::private::primitives::TxKind::Create;
 use alloy_sol_types::{sol, SolEvent};
+use antelope::chain::checksum::Checksum256;
+use num_bigint::{BigUint, ToBigUint};
 use reqwest::Url;
 use reth::primitives::BlockId;
 use reth::rpc::types::{BlockTransactionsKind, TransactionInput};
 use std::fmt::Debug;
 use std::str::FromStr;
+use std::thread::sleep;
+use std::time::Duration;
 use telos_translator_rs::rlp::telos_rlp_decode::TelosTxDecodable;
 use tracing::info;
 
@@ -149,8 +151,17 @@ pub async fn test_blocknum_onchain(url: &str, private_key: &str) {
     assert!(latest_block.header.number > rpc_block_num);
 
     // call for history blocks
-    let block_num_five_back = block_num_checker.getBlockNum().call().block(BlockId::number(latest_block.header.number - 5)).await.unwrap();
-    assert_eq!(block_num_five_back._0, U256::from(latest_block.header.number - 5), "Block number 5 blocks back via historical eth_call is not correct");
+    let block_num_five_back = block_num_checker
+        .getBlockNum()
+        .call()
+        .block(BlockId::number(latest_block.header.number - 5))
+        .await
+        .unwrap();
+    assert_eq!(
+        block_num_five_back._0,
+        U256::from(latest_block.header.number - 5),
+        "Block number 5 blocks back via historical eth_call is not correct"
+    );
 
     // test eip1559 transaction which is not supported
     test_1559_tx(provider.clone(), address).await;
@@ -160,6 +171,9 @@ pub async fn test_blocknum_onchain(url: &str, private_key: &str) {
     test_double_approve_erc20(provider.clone(), address).await;
     // test incorrect rlp call
     test_incorrect_rlp(provider.clone(), address).await;
+    test_unsigned_trx(provider.clone(), address).await;
+    test_unsigned_trx2(provider.clone(), address).await;
+    test_signed_trx(provider.clone(), address).await;
 
     // The below needs to be done using LegacyTransaction style call... with the current code it's including base_fee_per_gas and being rejected by reth
     // let block_num_latest = block_num_checker.getBlockNum().call().await.unwrap();
@@ -307,7 +321,7 @@ pub async fn test_incorrect_rlp<T>(
     };
 
     let tx_result = provider.send_transaction(legacy_tx_request).await;
-    assert!(tx_result.is_err());
+    assert!(tx_result.is_ok());
 }
 
 fn tx_trailing_empty_values() -> eyre::Result<Signed<TxLegacy>> {
@@ -327,4 +341,145 @@ fn tx_trailing_empty_values() -> eyre::Result<Signed<TxLegacy>> {
 
     let sig = Signature::from_rs_and_parity(r, s, v)?;
     Ok(TxLegacy::decode_telos_signed_fields(&mut &byte_array[..], Some(sig))?)
+}
+
+pub async fn test_unsigned_trx<T>(
+    provider: impl Provider<T, Ethereum> + Send + Sync,
+    sender_address: Address,
+) where
+    T: Transport + Clone + Debug,
+{
+    let chain_id = Some(provider.get_chain_id().await.unwrap());
+    let nonce = Some(provider.get_transaction_count(sender_address).await.unwrap());
+    let legacy_tx = tx_unsigned_trx().unwrap().tx().clone();
+
+    let legacy_tx_request = TransactionRequest {
+        from: Some(sender_address),
+        to: Some(legacy_tx.to),
+        gas: Some(legacy_tx.gas_limit as u64),
+        gas_price: Some(113378400387),
+        value: Some(legacy_tx.value),
+        input: TransactionInput::from(legacy_tx.input),
+        nonce,
+        chain_id,
+        ..Default::default()
+    };
+
+    let tx_result = provider.send_transaction(legacy_tx_request).await;
+    assert!(tx_result.is_ok());
+}
+
+fn tx_unsigned_trx() -> eyre::Result<Signed<TxLegacy>> {
+    let raw = hex::decode(
+        "e7808082520894d80744e16d62c62c5fa2a04b92da3fe6b9efb5238b52e00fde054bb73290000080",
+    )
+    .unwrap();
+
+    Ok(TxLegacy::decode_telos_signed_fields(
+        &mut raw.as_slice(),
+        Some(make_unique_vrs(
+            Checksum256::from_hex(
+                "00000032f9ff3095950dbef8701acc5f0eb193e3c2d089da0e2237659048d62b",
+            )
+            .unwrap(),
+            Address::ZERO,
+            0,
+        )),
+    )?)
+}
+
+pub async fn test_unsigned_trx2<T>(
+    provider: impl Provider<T, Ethereum> + Send + Sync,
+    sender_address: Address,
+) where
+    T: Transport + Clone + Debug,
+{
+    let chain_id = Some(provider.get_chain_id().await.unwrap());
+    let nonce = Some(provider.get_transaction_count(sender_address).await.unwrap());
+    let legacy_tx = tx_unsigned_trx2().unwrap().tx().clone();
+
+    let legacy_tx_request = TransactionRequest {
+        from: Some(sender_address),
+        to: Some(legacy_tx.to),
+        gas: Some(legacy_tx.gas_limit as u64),
+        gas_price: Some(113378400387),
+        value: Some(legacy_tx.value),
+        input: TransactionInput::from(legacy_tx.input),
+        nonce,
+        chain_id,
+        ..Default::default()
+    };
+
+    let tx_result = provider.send_transaction(legacy_tx_request).await;
+    assert!(tx_result.is_ok());
+}
+
+fn tx_unsigned_trx2() -> eyre::Result<Signed<TxLegacy>> {
+    let raw = hex::decode(
+        "f78212aa8575a1c379a28307a120947282835cf78a5e88a52fc701f09d1614635be4b8900000000000000000000000000000000080808080",
+    )
+        .unwrap();
+
+    Ok(TxLegacy::decode_telos_signed_fields(
+        &mut raw.as_slice(),
+        Some(make_unique_vrs(
+            Checksum256::from_hex(
+                "00000032f9ff3095950dbef8701acc5f0eb193e3c2d089da0e2237659048d62b",
+            )
+            .unwrap(),
+            Address::ZERO,
+            0,
+        )),
+    )?)
+}
+
+pub async fn test_signed_trx<T>(
+    provider: impl Provider<T, Ethereum> + Send + Sync,
+    sender_address: Address,
+) where
+    T: Transport + Clone + Debug,
+{
+    let chain_id = Some(provider.get_chain_id().await.unwrap());
+    let nonce = Some(provider.get_transaction_count(sender_address).await.unwrap());
+    let legacy_tx = tx_signed_trx().unwrap().tx().clone();
+
+    let legacy_tx_request = TransactionRequest {
+        from: Some(sender_address),
+        to: Some(legacy_tx.to),
+        gas: Some(legacy_tx.gas_limit as u64),
+        gas_price: Some(113378400387),
+        value: Some(legacy_tx.value),
+        input: TransactionInput::from(legacy_tx.input),
+        nonce,
+        chain_id,
+        ..Default::default()
+    };
+
+    let tx_result = provider.send_transaction(legacy_tx_request).await;
+    assert!(tx_result.is_ok());
+}
+
+fn tx_signed_trx() -> eyre::Result<Signed<TxLegacy>> {
+    let raw = hex::decode(
+        "f8aa11857a307efa8083023fa09479f5a8bd0d6a00a41ea62cda426cef0115117a6180b844e2bbb1580000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000073a0b40ec08b01a351dcbf5e86eeb15262bf7033dc7b99a054dfb198487636a79c5fa000b64d6775ba737738ccff7f1c0a29c287cbb91f2eb17e1d0b74ffb73d9daa85",
+    ).unwrap();
+
+    Ok(TxLegacy::decode_telos_signed_fields(&mut raw.as_slice(), None)?)
+}
+
+pub fn make_unique_vrs(
+    block_hash_native: Checksum256,
+    sender_address: Address,
+    trx_index: usize,
+) -> Signature {
+    let v = 42u64;
+    let hash_biguint = BigUint::from_bytes_be(&block_hash_native.data);
+    let trx_index_biguint: BigUint = trx_index.to_biguint().unwrap();
+    let r_biguint = hash_biguint + trx_index_biguint;
+
+    let mut s_bytes = [0x00u8; 32];
+    s_bytes[..20].copy_from_slice(sender_address.as_slice());
+    let r = U256::from_be_slice(r_biguint.to_bytes_be().as_slice());
+    let s = U256::from_be_slice(&s_bytes);
+    Signature::from_rs_and_parity(r, s, v).expect("Failed to create signature")
 }
