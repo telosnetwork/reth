@@ -248,7 +248,7 @@ pub async fn test_double_approve_erc20<T>(
     let nonce = provider.get_transaction_count(sender_address).await.unwrap();
     let chain_id = provider.get_chain_id().await.unwrap();
     let gas_price = provider.get_gas_price().await.unwrap();
-
+    info!("Nonce: {}", nonce);
     let erc20_contract_address: Address =
         "0x49f54c5e2301eb9256438123e80762470c2c7ec2".parse().unwrap();
     let spender: Address = "0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4".parse().unwrap();
@@ -280,7 +280,7 @@ pub async fn test_double_approve_erc20<T>(
 
     let nonce = provider.get_transaction_count(sender_address).await.unwrap();
     tx.nonce = Some(nonce);
-
+    info!("Nonce: {}", nonce);
     // repeat approve
     let tx_result = provider.send_transaction(tx.clone()).await;
     assert!(tx_result.is_ok());
@@ -307,7 +307,6 @@ pub async fn test_incorrect_rlp<T>(
     let chain_id = Some(provider.get_chain_id().await.unwrap());
     let nonce = Some(provider.get_transaction_count(sender_address).await.unwrap());
     let legacy_tx = tx_trailing_empty_values().unwrap().tx().clone();
-
     let legacy_tx_request = TransactionRequest {
         from: Some(sender_address),
         to: Some(legacy_tx.to),
@@ -321,7 +320,9 @@ pub async fn test_incorrect_rlp<T>(
     };
 
     let tx_result = provider.send_transaction(legacy_tx_request).await;
+
     assert!(tx_result.is_ok());
+    let _ = tx_result.unwrap().get_receipt().await.unwrap();
 }
 
 fn tx_trailing_empty_values() -> eyre::Result<Signed<TxLegacy>> {
@@ -352,13 +353,12 @@ pub async fn test_unsigned_trx<T>(
     let chain_id = Some(provider.get_chain_id().await.unwrap());
     let nonce = Some(provider.get_transaction_count(sender_address).await.unwrap());
     let legacy_tx = tx_unsigned_trx().unwrap().tx().clone();
-
     let legacy_tx_request = TransactionRequest {
         from: Some(sender_address),
         to: Some(legacy_tx.to),
         gas: Some(legacy_tx.gas_limit as u64),
         gas_price: Some(113378400387),
-        value: Some(legacy_tx.value),
+        value: Some(U256::from(1)), // update balance to 0 since there is not enough from decoded data on the account
         input: TransactionInput::from(legacy_tx.input),
         nonce,
         chain_id,
@@ -366,7 +366,9 @@ pub async fn test_unsigned_trx<T>(
     };
 
     let tx_result = provider.send_transaction(legacy_tx_request).await;
+
     assert!(tx_result.is_ok());
+    let _ = tx_result.unwrap().get_receipt().await.unwrap();
 }
 
 fn tx_unsigned_trx() -> eyre::Result<Signed<TxLegacy>> {
@@ -397,7 +399,6 @@ pub async fn test_unsigned_trx2<T>(
     let chain_id = Some(provider.get_chain_id().await.unwrap());
     let nonce = Some(provider.get_transaction_count(sender_address).await.unwrap());
     let legacy_tx = tx_unsigned_trx2().unwrap().tx().clone();
-
     let legacy_tx_request = TransactionRequest {
         from: Some(sender_address),
         to: Some(legacy_tx.to),
@@ -411,7 +412,9 @@ pub async fn test_unsigned_trx2<T>(
     };
 
     let tx_result = provider.send_transaction(legacy_tx_request).await;
+
     assert!(tx_result.is_ok());
+    let _ = tx_result.unwrap().get_receipt().await.unwrap();
 }
 
 fn tx_unsigned_trx2() -> eyre::Result<Signed<TxLegacy>> {
@@ -442,7 +445,6 @@ pub async fn test_signed_trx<T>(
     let chain_id = Some(provider.get_chain_id().await.unwrap());
     let nonce = Some(provider.get_transaction_count(sender_address).await.unwrap());
     let legacy_tx = tx_signed_trx().unwrap().tx().clone();
-
     let legacy_tx_request = TransactionRequest {
         from: Some(sender_address),
         to: Some(legacy_tx.to),
@@ -456,7 +458,9 @@ pub async fn test_signed_trx<T>(
     };
 
     let tx_result = provider.send_transaction(legacy_tx_request).await;
+
     assert!(tx_result.is_ok());
+    let _ = tx_result.unwrap().get_receipt().await.unwrap();
 }
 
 fn tx_signed_trx() -> eyre::Result<Signed<TxLegacy>> {
