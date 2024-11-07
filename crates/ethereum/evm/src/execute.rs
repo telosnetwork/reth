@@ -263,24 +263,24 @@ where
             new_addresses_using_create_iter.next();
         }
 
-        #[cfg(feature = "telos")]
-        {
-            // Perform state diff comparision
-            let revm_state_diffs = evm.db_mut().transition_state.clone().unwrap_or_default().transitions;
-            let block_num = block.block.header.number;
-            println!(
-                "Compare: block {block_num} {}",
-                compare_state_diffs(
-                    &mut evm,
-                    revm_state_diffs,
-                    unwrapped_telos_extra_fields.statediffs_account.clone().unwrap_or_default(),
-                    unwrapped_telos_extra_fields.statediffs_accountstate.clone().unwrap_or_default(),
-                    unwrapped_telos_extra_fields.new_addresses_using_create.clone().unwrap_or_default(),
-                    unwrapped_telos_extra_fields.new_addresses_using_openwallet.clone().unwrap_or_default(),
-                    false
-                )
-            );
-        }
+        // #[cfg(feature = "telos")]
+        // {
+        //     // Perform state diff comparision
+        //     let revm_state_diffs = evm.db_mut().transition_state.clone().unwrap_or_default().transitions;
+        //     let block_num = block.block.header.number;
+        //     println!(
+        //         "Compare: block {block_num} {}",
+        //         compare_state_diffs(
+        //             &mut evm,
+        //             revm_state_diffs,
+        //             unwrapped_telos_extra_fields.statediffs_account.clone().unwrap_or_default(),
+        //             unwrapped_telos_extra_fields.statediffs_accountstate.clone().unwrap_or_default(),
+        //             unwrapped_telos_extra_fields.new_addresses_using_create.clone().unwrap_or_default(),
+        //             unwrapped_telos_extra_fields.new_addresses_using_openwallet.clone().unwrap_or_default(),
+        //             false
+        //         )
+        //     );
+        // }
 
         #[cfg(feature = "telos")]
         let receipts = if unwrapped_telos_extra_fields.receipts.is_some() {
