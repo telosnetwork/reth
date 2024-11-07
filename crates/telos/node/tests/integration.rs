@@ -1,4 +1,4 @@
-use alloy_provider::{Provider, ProviderBuilder};
+use alloy_provider::{Provider, ProviderBuilder, ReqwestProvider};
 use antelope::api::client::{APIClient, DefaultProvider};
 use reqwest::Url;
 use reth::{
@@ -11,6 +11,8 @@ use reth_e2e_test_utils::node::NodeTestContext;
 use reth_node_telos::{TelosArgs, TelosNode};
 use reth_telos_rpc::TelosClient;
 use std::{fs, path::PathBuf, sync::Arc, time::Duration};
+use std::str::FromStr;
+use alloy_primitives::Address;
 use telos_consensus_client::{
     client::ConsensusClient,
     config::{AppConfig, CliArgs},
@@ -36,6 +38,10 @@ const CONTAINER_TAG: &str =
 
 // This is the last block in the container, after this block the node is done syncing and is running live
 const CONTAINER_LAST_EVM_BLOCK: u64 = 1010;
+
+// evmuser address from the container
+const EVM_USER_ADDRESS: &str = "0x4c641f9b61809fadeef2ec64f54ea2bcb398e4f3";
+const EVM_USER: &str = "evmuser";
 
 async fn start_ship() -> ContainerAsync<GenericImage> {
     // Change this container to a local image if using new ship data,
@@ -198,6 +204,7 @@ async fn testing_chain_sync() {
 
     let rpc_url = Url::from(format!("http://localhost:{}", rpc_port).parse().unwrap());
     let provider = ProviderBuilder::new().on_http(rpc_url.clone());
+    let api_client = APIClient::<DefaultProvider>::default_provider(format!("http://localhost:{chain_port}").to_string(), Some(1)).unwrap();
 
     loop {
         tokio::time::sleep(Duration::from_secs(1)).await;
@@ -208,16 +215,17 @@ async fn testing_chain_sync() {
             break;
         }
         if latest_block > CONTAINER_LAST_EVM_BLOCK {
+            // test account nonce after successful reth sync from the container
+            test_evm_address_nonce(provider, api_client).await;
             break;
         }
     }
 
     live_test_runner::run_tests(
-        format!("http://localhost:{chain_port}"),
         &rpc_url.clone().to_string(),
         "87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084",
     )
-    .await;
+        .await;
 
     _ = translator_shutdown.shutdown().await.unwrap();
     _ = consensus_shutdown.shutdown().await.unwrap();
@@ -226,4 +234,16 @@ async fn testing_chain_sync() {
 
     _ = tokio::join!(client_handle, translator_handle);
     println!("Translator shutdown done.");
+}
+
+async fn test_evm_address_nonce(provider: ReqwestProvider, api_client: APIClient<DefaultProvider>) {
+    let params = live_test_runner::account_params(EVM_USER);
+    let row: &live_test_runner::AccountRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
+
+    let account = provider.get_account(Address::from_str(EVM_USER_ADDRESS).unwrap()).await.unwrap();
+    let tx_count = provider.get_transaction_count(Address::from_str(EVM_USER_ADDRESS).unwrap()).await.unwrap();
+    // assert nonce of the account that has sent transactions in the container blocks
+    assert_eq!(account.nonce, 2);
+    assert_eq!(account.nonce, tx_count);
+    assert_eq!(account.nonce, row.nonce);
 }

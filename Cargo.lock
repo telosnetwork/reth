@@ -1256,6 +1256,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "antelope-client"
+version = "0.3.0"
+source = "git+https://github.com/telosnetwork/antelope-rs#fea2203b2edb5cfcedd5365031e5286b47dc5c66"
+dependencies = [
+ "antelope-client-macros",
+ "async-trait",
+ "base64 0.21.7",
+ "bs58",
+ "chrono",
+ "digest 0.10.7",
+ "ecdsa",
+ "flate2",
+ "hex",
+ "hmac 0.12.1",
+ "k256",
+ "log",
+ "once_cell",
+ "p256",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "reqwest 0.11.27",
+ "ripemd",
+ "serde",
+ "serde-big-array",
+ "serde_json",
+ "sha2 0.10.8",
+ "signature",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "antelope-client-macros"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9391,7 +9424,7 @@ dependencies = [
  "alloy-signer-local",
  "alloy-sol-types",
  "alloy-transport-http 0.4.2",
- "antelope-client",
+ "antelope-client 0.2.1",
  "clap",
  "derive_more 1.0.0",
  "env_logger 0.11.5",
@@ -10574,7 +10607,7 @@ dependencies = [
  "alloy-network 0.4.2",
  "alloy-primitives",
  "alloy-rpc-types 0.4.2",
- "antelope-client",
+ "antelope-client 0.2.1",
  "async-trait",
  "derive_more 1.0.0",
  "jsonrpsee-types",
@@ -12041,12 +12074,11 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 [[package]]
 name = "telos-consensus-client"
 version = "0.1.0"
-source = "git+https://github.com/telosnetwork/telos-consensus-client?rev=f8ecbe1aeea57911c9fbefdddf49efa92d8472ce#f8ecbe1aeea57911c9fbefdddf49efa92d8472ce"
 dependencies = [
  "alloy",
  "alloy-consensus 0.3.6",
  "alloy-rlp",
- "antelope-client",
+ "antelope-client 0.3.0",
  "arrowbatch",
  "base64 0.22.1",
  "bytes",
@@ -12092,13 +12124,12 @@ dependencies = [
 [[package]]
 name = "telos-translator-rs"
 version = "0.1.0"
-source = "git+https://github.com/telosnetwork/telos-consensus-client?rev=f8ecbe1aeea57911c9fbefdddf49efa92d8472ce#f8ecbe1aeea57911c9fbefdddf49efa92d8472ce"
 dependencies = [
  "alloy",
  "alloy-consensus 0.3.6",
  "alloy-eips 0.3.6",
  "alloy-rlp",
- "antelope-client",
+ "antelope-client 0.3.0",
  "bytes",
  "clap",
  "dashmap 5.5.3",

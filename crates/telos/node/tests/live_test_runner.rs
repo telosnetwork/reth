@@ -12,7 +12,6 @@ use alloy_sol_types::{sol, SolEvent};
 use antelope::chain::checksum::Checksum160;
 use antelope::{name, StructPacker};
 use antelope::api::{
-    client::{APIClient, DefaultProvider},
     v1::structs::{
         GetTableRowsParams, IndexPosition, TableIndexType,
     }
@@ -46,7 +45,7 @@ pub struct AccountRow {
     pub balance: Checksum256,
 }
 
-fn account_params(account: &str) -> GetTableRowsParams {
+pub(crate) fn account_params(account: &str) -> GetTableRowsParams {
     GetTableRowsParams {
         code: name!("eosio.evm"),
         table: name!("account"),
@@ -63,13 +62,12 @@ fn account_params(account: &str) -> GetTableRowsParams {
 #[tokio::test]
 pub async fn run_local() {
     env_logger::builder().is_test(true).try_init().unwrap();
-    let api_url = "http://localhost:8888".to_string();
     let url = "http://localhost:8545";
     let private_key = "26e86e45f6fc45ec6e2ecd128cec80fa1d1505e5507dcd2ae58c3130a7a97b48";
-    run_tests(api_url, url, private_key).await;
+    run_tests(url, private_key).await;
 }
 
-pub async fn run_tests(api_url: String, url: &str, private_key: &str) {
+pub async fn run_tests(url: &str, private_key: &str) {
     let signer = PrivateKeySigner::from_str(private_key).unwrap();
     let wallet = EthereumWallet::from(signer.clone());
 
@@ -86,10 +84,10 @@ pub async fn run_tests(api_url: String, url: &str, private_key: &str) {
     let block = provider.get_block(BlockId::latest(), BlockTransactionsKind::Full).await;
     info!("Latest block:\n {:?}", block);
 
-    test_blocknum_onchain(api_url, url, private_key).await;
+    test_blocknum_onchain(url, private_key).await;
 }
 
-pub async fn test_blocknum_onchain(api_url: String, url: &str, private_key: &str) {
+pub async fn test_blocknum_onchain(url: &str, private_key: &str) {
     sol! {
         #[sol(rpc, bytecode="6080604052348015600e575f80fd5b5060ef8061001b5f395ff3fe6080604052348015600e575f80fd5b50600436106030575f3560e01c80637f6c6f101460345780638fb82b0214604e575b5f80fd5b603a6056565b6040516045919060a2565b60405180910390f35b6054605d565b005b5f43905090565b437fc04eeb4cfe0799838abac8fa75bca975bff679179886c80c84a7b93229a1a61860405160405180910390a2565b5f819050919050565b609c81608c565b82525050565b5f60208201905060b35f8301846095565b9291505056fea264697066735822122003482ecf0ea4d820deb6b5ebd2755b67c3c8d4fb9ed50a8b4e0bce59613552df64736f6c634300081a0033")]
         contract BlockNumChecker {
@@ -201,12 +199,6 @@ pub async fn test_blocknum_onchain(api_url: String, url: &str, private_key: &str
 
     info!("Deploying contract using address {address}");
 
-    let params = account_params("evmuser");
-    let api_client = APIClient::<DefaultProvider>::default_provider(api_url, Some(1)).unwrap();
-    let row: &AccountRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
-
-    info!("Account nonce: {}", row.nonce);
-
     // test eip1559 transaction which is not supported
     test_1559_tx(provider.clone(), address).await;
     // test eip2930 transaction which is not supported
@@ -218,7 +210,6 @@ pub async fn test_blocknum_onchain(api_url: String, url: &str, private_key: &str
     test_unsigned_trx(provider.clone(), address).await;
     test_unsigned_trx2(provider.clone(), address).await;
     test_signed_trx(provider.clone(), address).await;
-
     // The below needs to be done using LegacyTransaction style call... with the current code it's including base_fee_per_gas and being rejected by reth
     // let block_num_latest = block_num_checker.getBlockNum().call().await.unwrap();
     // assert!(block_num_latest._0 > U256::from(rpc_block_num), "Latest block number via call to getBlockNum is not greater than the block number in the previous log event");
@@ -226,6 +217,7 @@ pub async fn test_blocknum_onchain(api_url: String, url: &str, private_key: &str
     // let block_num_five_back = block_num_checker.getBlockNum().call().block(BlockId::number(rpc_block_num - 5)).await.unwrap();
     // assert!(block_num_five_back._0 == U256::from(rpc_block_num - 5), "Block number 5 blocks back via historical eth_call is not correct");
 }
+
 
 // test_1559_tx tests sending eip1559 transaction that has max_priority_fee_per_gas and max_fee_per_gas set
 pub async fn test_1559_tx<T>(

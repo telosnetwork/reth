@@ -1,19 +1,15 @@
 //! Loads and formats OP transaction RPC response.
 
-use std::str::FromStr;
 use alloy_primitives::{Bytes, B256};
-use alloy_primitives::private::proptest::collection::vec;
 use antelope::api::v1::structs::SendTransactionResponse;
-use log::info;
 use reth_node_api::FullNodeComponents;
 use reth_provider::{BlockReaderIdExt, TransactionsProvider};
 use reth_rpc_eth_api::{
     helpers::{EthSigner, EthTransactions, LoadTransaction, SpawnBlocking},
     FromEthApiError, FullEthApiTypes,
 };
-use reth_rpc_eth_types::{utils::recover_raw_transaction, EthApiError, EthStateCache};
-use reth_transaction_pool::{PoolTransaction, TransactionOrigin, TransactionPool};
-use crate::error::TelosEthApiError;
+use reth_rpc_eth_types::{utils::recover_raw_transaction, EthStateCache};
+use reth_transaction_pool::{PoolTransaction, TransactionPool};
 use crate::eth::TelosClient;
 use crate::eth::TelosEthApi;
 
