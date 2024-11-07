@@ -213,6 +213,7 @@ async fn testing_chain_sync() {
     }
 
     live_test_runner::run_tests(
+        format!("http://localhost:{chain_port}"),
         &rpc_url.clone().to_string(),
         "87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084",
     )
