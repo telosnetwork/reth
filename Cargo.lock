@@ -9436,6 +9436,7 @@ dependencies = [
  "reth-basic-payload-builder",
  "reth-beacon-consensus",
  "reth-chainspec",
+ "reth-db",
  "reth-e2e-test-utils",
  "reth-ethereum-engine-primitives",
  "reth-ethereum-payload-builder",
@@ -12113,10 +12114,12 @@ dependencies = [
 name = "telos-reth"
 version = "1.0.8"
 dependencies = [
+ "alloy-primitives",
  "clap",
  "reth",
  "reth-chainspec",
  "reth-cli-util",
+ "reth-db",
  "reth-node-builder",
  "reth-node-telos",
  "reth-provider",

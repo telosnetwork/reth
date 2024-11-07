@@ -35,6 +35,8 @@ reth-telos-rpc.workspace = true
 reth-tracing.workspace = true
 reth-transaction-pool.workspace = true
 reth-telos-rpc-engine-api.workspace = true
+alloy-primitives.workspace = true
+reth-db.workspace = true
 
 clap.workspace = true
 serde = { workspace = true, features = ["derive"] }

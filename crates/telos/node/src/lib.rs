@@ -11,6 +11,7 @@
 
 pub mod args;
 pub mod node;
+pub mod two_way_storage_compare;
 
 pub use crate::args::TelosArgs;
 pub use crate::node::TelosNode;
