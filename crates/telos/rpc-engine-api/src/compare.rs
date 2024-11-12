@@ -7,6 +7,7 @@ use revm_primitives::db::DatabaseCommit;
 use revm_primitives::state::AccountStatus;
 use sha2::{Digest, Sha256};
 use tracing::{debug, warn};
+use reth_primitives::KECCAK_EMPTY;
 use reth_storage_errors::provider::ProviderError;
 use crate::structs::{TelosAccountStateTableRow, TelosAccountTableRow};
 
@@ -69,18 +70,15 @@ impl StateOverride {
         acc.info.nonce = nonce;
     }
 
-    pub fn override_code<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, maybe_code: Option<Bytes>) {
+    pub fn override_code<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, maybe_code: &Bytes) {
         self.maybe_init_account(revm_db, address);
         let mut acc = self.accounts.get_mut(&address).unwrap();
-        match maybe_code {
-            None => {
-                acc.info.code_hash = Default::default();
-                acc.info.code = None;
-            }
-            Some(code) => {
-                acc.info.code_hash = B256::from_slice(Sha256::digest(code.as_ref()).as_slice());
-                acc.info.code = Some(Bytecode::LegacyRaw(code));
-            }
+        if maybe_code.len() > 0 {
+            acc.info.code_hash = B256::from_slice(Sha256::digest(maybe_code.as_ref()).as_slice());
+            acc.info.code = Some(Bytecode::LegacyRaw(maybe_code.clone()));
+        } else {
+            acc.info.code_hash = KECCAK_EMPTY;
+            acc.info.code = Some(Bytecode::default());
         }
     }
 
@@ -184,12 +182,12 @@ where
                                 Ok(bytecode) => {
                                     if bytecode.len() != row.code.len() {
                                         maybe_panic!(panic_mode, "Difference in code size, address: {:?} - revm: {} - tevm: {}",row.address,bytecode.len(),row.code.len());
-                                        state_override.override_code(revm_db, row.address, Some(row.code.clone()));
+                                        state_override.override_code(revm_db, row.address, &row.code);
                                     }
                                 }
                                 Err(_) => {
                                     maybe_panic!(panic_mode, "Difference in code existence, error while fetching db, address: {:?} - revm: Err - tevm: {}",row.address,row.code.len());
-                                    state_override.override_code(revm_db, row.address, Some(row.code.clone()));
+                                    state_override.override_code(revm_db, row.address, &row.code);
                                 }
                             }
                         }
@@ -199,13 +197,13 @@ where
                            Bytecode::LegacyRaw(code) => {
                               if code.len() != row.code.len() {
                                   maybe_panic!(panic_mode, "Difference in legacy code size, address: {:?} - revm: {:?} - tevm: {:?}",row.address,code.len(),row.code.len());
-                                  state_override.override_code(revm_db, row.address, Some(row.code.clone()));
+                                  state_override.override_code(revm_db, row.address, &row.code);
                               }
                            }
                            Bytecode::LegacyAnalyzed(code) => {
                                if code.original_len() != row.code.len() {
                                    maybe_panic!(panic_mode, "Difference in legacy (analyzed) code size, address: {:?} - revm: {:?} - tevm: {:?}",row.address,code.original_len(),row.code.len());
-                                   state_override.override_code(revm_db, row.address, Some(row.code.clone()));
+                                   state_override.override_code(revm_db, row.address, &row.code);
                                }
                            }
                            Bytecode::Eof(_) => panic!("Eof not implemented!"),
