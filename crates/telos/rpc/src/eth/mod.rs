@@ -26,7 +26,7 @@ use reth_provider::{
     BlockIdReader, BlockNumReader, BlockReaderIdExt, ChainSpecProvider, HeaderProvider,
     StageCheckpointReader, StateProviderFactory,
 };
-use reth_rpc::eth::{core::EthApiInner, DevSigner};
+use reth_rpc::eth::{core::EthApiInner, DevSigner, EthTxBuilder};
 use reth_rpc_eth_api::{
     helpers::{
         AddDevSigners, EthApiSpec, EthFees, EthSigner, EthState, LoadBlock, LoadFee, LoadState,
@@ -104,7 +104,7 @@ where
 {
     type Error = TelosEthApiError;
     type NetworkTypes = AnyNetwork;
-    type TransactionCompat = ();
+    type TransactionCompat = EthTxBuilder;
 }
 
 impl<N> EthApiSpec for TelosEthApi<N>
