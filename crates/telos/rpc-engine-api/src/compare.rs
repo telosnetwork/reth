@@ -78,7 +78,7 @@ impl StateOverride {
             acc.info.code = Some(Bytecode::LegacyRaw(maybe_code.clone()));
         } else {
             acc.info.code_hash = KECCAK_EMPTY;
-            acc.info.code = Some(Bytecode::default());
+            acc.info.code = None;
         }
     }
 
