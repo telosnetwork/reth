@@ -4,7 +4,7 @@
 static ALLOC: reth_cli_util::allocator::Allocator = reth_cli_util::allocator::new_allocator();
 
 use clap::Parser;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 use reth::args::utils::EthereumChainSpecParser;
 use reth_node_builder::{engine_tree_config::TreeConfig, EngineNodeLauncher};
 use reth::cli::Cli;
@@ -20,6 +20,8 @@ use reth_db::{PlainAccountState, PlainStorageState};
 
 #[cfg(feature = "telos")]
 fn main() {
+    use reth_provider::BlockNumReader;
+
     reth_cli_util::sigsegv_handler::install();
 
     // Enable backtraces unless a RUST_BACKTRACE value has already been explicitly provided.
@@ -79,16 +81,20 @@ fn main() {
 
                             let (account_table, accountstate_table, block_number) = reth_node_telos::two_way_storage_compare::get_telos_tables(telos_rpc.unwrap().as_str(), block_delta.unwrap()).await;
 
-                            info!("Two-way comparing state (Reth vs. Telos) at height: {:?}", block_number);
+                            if block_number.as_u64().unwrap() <= handle.node.provider.best_block_number().unwrap() {
+                                info!("Two-way comparing state (Reth vs. Telos) at height: {:?}", block_number);
 
-                            let state_at_specific_height = handle.node.provider.state_by_block_id(BlockId::Number(BlockNumberOrTag::Number(block_number.as_u64().unwrap()))).unwrap();
-                            let plain_account_state = handle.node.provider.database_provider_ro().unwrap().table::<PlainAccountState>().unwrap();
-                            let plain_storage_state = handle.node.provider.database_provider_ro().unwrap().table::<PlainStorageState>().unwrap();
+                                let state_at_specific_height = handle.node.provider.state_by_block_id(BlockId::Number(BlockNumberOrTag::Number(block_number.as_u64().unwrap()))).unwrap();
+                                let plain_account_state = handle.node.provider.database_provider_ro().unwrap().table::<PlainAccountState>().unwrap();
+                                let plain_storage_state = handle.node.provider.database_provider_ro().unwrap().table::<PlainStorageState>().unwrap();
 
-                            let match_counter = reth_node_telos::two_way_storage_compare::two_side_state_compare(account_table, accountstate_table, state_at_specific_height, plain_account_state, plain_storage_state).await;
-                            match_counter.print();
+                                let match_counter = reth_node_telos::two_way_storage_compare::two_side_state_compare(account_table, accountstate_table, state_at_specific_height, plain_account_state, plain_storage_state).await;
+                                match_counter.print();
 
-                            info!("Comparing done");
+                                info!("Comparing done");
+                            } else {
+                                error!("Nodeos is ahead of reth, failed to compare state");
+                            }
                         }
                     }
                     _ => {}

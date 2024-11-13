@@ -288,14 +288,14 @@ pub async fn two_side_state_compare(
 pub async fn get_telos_tables(telos_rpc: &str, block_delta: u32) -> (HashMap<Address, Account>, HashMap<(Address, B256), U256>, BlockId) {
 
     let api_client = APIClient::<DefaultProvider>::default_provider(telos_rpc.into(), Some(5)).unwrap();
-    let info = api_client.v1_chain.get_info().await.unwrap();
+    let info_start = api_client.v1_chain.get_info().await.unwrap();
 
-    let evm_block_num = info.head_block_num - block_delta;
+    let evm_block_num_start = info_start.head_block_num - block_delta;
 
     let mut has_more_account = true;
     let mut lower_bound_account = Some(TableIndexType::UINT64(0));
 
-    let evm_block_id = BlockId::from(evm_block_num as u64);
+    let evm_block_id = BlockId::from(evm_block_num_start as u64);
 
     let mut account_table = HashMap::default();
     let mut accountstate_table = HashMap::default();
@@ -354,6 +354,13 @@ pub async fn get_telos_tables(telos_rpc: &str, block_delta: u32) -> (HashMap<Add
         } else {
             panic!("Failed to fetch account row");
         }
+    }
+
+    let info_end = api_client.v1_chain.get_info().await.unwrap();
+    let evm_block_num_end = info_end.head_block_num - block_delta;
+
+    if evm_block_num_start != evm_block_num_end {
+        panic!("Nodeos is syncing, it is impossible to get an accurate state from a syncing native RPC");
     }
 
     (account_table, accountstate_table, evm_block_id)
