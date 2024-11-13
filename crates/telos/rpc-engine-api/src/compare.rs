@@ -53,7 +53,7 @@ impl StateOverride {
             acc.info.code_hash = B256::from_slice(Sha256::digest(telos_row.code.as_ref()).as_slice());
             acc.info.code = Some(Bytecode::LegacyRaw(telos_row.code.clone()));
         } else {
-            acc.info.code_hash = Default::default();
+            acc.info.code_hash = KECCAK_EMPTY;
             acc.info.code = None;
         }
     }
