@@ -28,15 +28,6 @@ use tracing::info;
 use reth::primitives::revm_primitives::bytes::Bytes;
 use reth::revm::primitives::{AccessList, AccessListItem};
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, StructPacker)]
-pub struct ConfigRow {
-    pub trx_index: u32,
-    pub last_block: u32,
-    pub gas_used_block: Checksum256,
-    pub gas_price: Checksum256,
-    pub revision: BinaryExtension<u32>,
-}
-
 pub(crate) fn account_params(account: &str) -> GetTableRowsParams {
     GetTableRowsParams {
         code: name!("eosio.evm"),

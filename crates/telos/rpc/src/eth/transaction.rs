@@ -1,7 +1,6 @@
 //! Loads and formats OP transaction RPC response.
 
 use alloy_primitives::{Bytes, B256};
-use antelope::api::v1::structs::SendTransactionResponse;
 use reth_node_api::FullNodeComponents;
 use reth_provider::{BlockReaderIdExt, TransactionsProvider};
 use reth_rpc_eth_api::{

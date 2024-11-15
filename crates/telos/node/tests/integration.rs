@@ -1,4 +1,3 @@
-use crate::live_test_runner::ConfigRow;
 use alloy_primitives::Address;
 use alloy_provider::{Provider, ProviderBuilder, ReqwestProvider};
 use antelope::api::client::{APIClient, DefaultProvider};
@@ -271,7 +270,7 @@ async fn test_revision(api_client: APIClient<DefaultProvider>) {
     // revision in the container transaction is set to 1
     let expected_revision = 1u32;
     let params = live_test_runner::config_params();
-    let row: &ConfigRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
+    let row: &EvmContractConfigRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
 
     assert_eq!(*row.revision.value().unwrap(), expected_revision);
 }
