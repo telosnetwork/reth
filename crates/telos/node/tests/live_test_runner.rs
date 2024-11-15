@@ -9,19 +9,12 @@ use alloy_rpc_types::TransactionRequest;
 use alloy_signer_local::PrivateKeySigner;
 use alloy_sol_types::private::primitives::TxKind::Create;
 use alloy_sol_types::{sol, SolEvent};
+use antelope::api::v1::structs::{GetTableRowsParams, IndexPosition, TableIndexType};
+use antelope::chain::binary_extension::BinaryExtension;
 use antelope::chain::checksum::Checksum160;
+use antelope::chain::{checksum::Checksum256, name::Name, Packer};
+use antelope::serializer::{Decoder, Encoder};
 use antelope::{name, StructPacker};
-use antelope::api::{
-    v1::structs::{
-        GetTableRowsParams, IndexPosition, TableIndexType,
-    }
-};
-use antelope::chain::{
-    name::Name,
-    checksum::Checksum256,
-    Packer
-};
-use antelope::serializer::{Encoder, Decoder};
 use num_bigint::{BigUint, ToBigUint};
 use reqwest::Url;
 use reth::primitives::BlockId;
@@ -36,13 +29,12 @@ use reth::primitives::revm_primitives::bytes::Bytes;
 use reth::revm::primitives::{AccessList, AccessListItem};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, StructPacker)]
-pub struct AccountRow {
-    pub index: u64,
-    pub address: Checksum160,
-    pub account: Name,
-    pub nonce: u64,
-    pub code: Vec<u8>,
-    pub balance: Checksum256,
+pub struct ConfigRow {
+    pub trx_index: u32,
+    pub last_block: u32,
+    pub gas_used_block: Checksum256,
+    pub gas_price: Checksum256,
+    pub revision: BinaryExtension<u32>,
 }
 
 pub(crate) fn account_params(account: &str) -> GetTableRowsParams {
@@ -55,6 +47,20 @@ pub(crate) fn account_params(account: &str) -> GetTableRowsParams {
         limit: Some(1),
         reverse: None,
         index_position: Some(IndexPosition::TERTIARY),
+        show_payer: None,
+    }
+}
+
+pub(crate) fn config_params() -> GetTableRowsParams {
+    GetTableRowsParams {
+        code: name!("eosio.evm"),
+        table: name!("config"),
+        scope: Some(name!("eosio.evm")),
+        lower_bound: None,
+        upper_bound: None,
+        limit: Some(1),
+        reverse: None,
+        index_position: None,
         show_payer: None,
     }
 }
@@ -217,7 +223,6 @@ pub async fn test_blocknum_onchain(url: &str, private_key: &str) {
     // let block_num_five_back = block_num_checker.getBlockNum().call().block(BlockId::number(rpc_block_num - 5)).await.unwrap();
     // assert!(block_num_five_back._0 == U256::from(rpc_block_num - 5), "Block number 5 blocks back via historical eth_call is not correct");
 }
-
 
 // test_1559_tx tests sending eip1559 transaction that has max_priority_fee_per_gas and max_fee_per_gas set
 pub async fn test_1559_tx<T>(

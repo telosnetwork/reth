@@ -1,5 +1,11 @@
+use crate::live_test_runner::ConfigRow;
+use alloy_primitives::Address;
 use alloy_provider::{Provider, ProviderBuilder, ReqwestProvider};
 use antelope::api::client::{APIClient, DefaultProvider};
+use antelope::chain::binary_extension::BinaryExtension;
+use antelope::chain::checksum::Checksum256;
+use antelope::serializer::Decoder;
+use antelope::StructPacker;
 use reqwest::Url;
 use reth::{
     args::RpcServerArgs,
@@ -10,14 +16,16 @@ use reth_chainspec::{ChainSpec, ChainSpecBuilder, TEVMTESTNET};
 use reth_e2e_test_utils::node::NodeTestContext;
 use reth_node_telos::{TelosArgs, TelosNode};
 use reth_telos_rpc::TelosClient;
-use std::{fs, path::PathBuf, sync::Arc, time::Duration};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::str::FromStr;
-use alloy_primitives::Address;
+use std::{fs, path::PathBuf, sync::Arc, time::Duration};
 use telos_consensus_client::{
     client::ConsensusClient,
     config::{AppConfig, CliArgs},
     main_utils::build_consensus_client,
 };
+use telos_translator_rs::types::evm_types::{AccountRow, EvmContractConfigRow};
 use telos_translator_rs::{
     block::TelosEVMBlock, translator::Translator, types::translator_types::ChainId,
 };
@@ -25,6 +33,7 @@ use testcontainers::{
     core::ContainerPort::Tcp, runners::AsyncRunner, ContainerAsync, GenericImage,
 };
 use tokio::sync::mpsc;
+use tracing::info;
 
 pub mod live_test_runner;
 
@@ -204,7 +213,14 @@ async fn testing_chain_sync() {
 
     let rpc_url = Url::from(format!("http://localhost:{}", rpc_port).parse().unwrap());
     let provider = ProviderBuilder::new().on_http(rpc_url.clone());
-    let api_client = APIClient::<DefaultProvider>::default_provider(format!("http://localhost:{chain_port}").to_string(), Some(1)).unwrap();
+
+    info!("Client URL {:?}", format!("http://localhost:{chain_port}"));
+
+    let api_client = APIClient::<DefaultProvider>::default_provider(
+        format!("http://localhost:{chain_port}").to_string(),
+        Some(1),
+    )
+    .unwrap();
 
     loop {
         tokio::time::sleep(Duration::from_secs(1)).await;
@@ -216,7 +232,9 @@ async fn testing_chain_sync() {
         }
         if latest_block > CONTAINER_LAST_EVM_BLOCK {
             // test account nonce after successful reth sync from the container
-            test_evm_address_nonce(provider, api_client).await;
+            test_evm_address_nonce(provider, api_client.clone()).await;
+            // test current revision from the transactions in the container
+            test_revision(api_client).await;
             break;
         }
     }
@@ -225,7 +243,7 @@ async fn testing_chain_sync() {
         &rpc_url.clone().to_string(),
         "87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084",
     )
-        .await;
+    .await;
 
     _ = translator_shutdown.shutdown().await.unwrap();
     _ = consensus_shutdown.shutdown().await.unwrap();
@@ -238,12 +256,22 @@ async fn testing_chain_sync() {
 
 async fn test_evm_address_nonce(provider: ReqwestProvider, api_client: APIClient<DefaultProvider>) {
     let params = live_test_runner::account_params(EVM_USER);
-    let row: &live_test_runner::AccountRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
+    let row: &AccountRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
 
     let account = provider.get_account(Address::from_str(EVM_USER_ADDRESS).unwrap()).await.unwrap();
-    let tx_count = provider.get_transaction_count(Address::from_str(EVM_USER_ADDRESS).unwrap()).await.unwrap();
+    let tx_count =
+        provider.get_transaction_count(Address::from_str(EVM_USER_ADDRESS).unwrap()).await.unwrap();
     // assert nonce of the account that has sent transactions in the container blocks
     assert_eq!(account.nonce, 2);
     assert_eq!(account.nonce, tx_count);
     assert_eq!(account.nonce, row.nonce);
+}
+
+async fn test_revision(api_client: APIClient<DefaultProvider>) {
+    // revision in the container transaction is set to 1
+    let expected_revision = 1u32;
+    let params = live_test_runner::config_params();
+    let row: &ConfigRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
+
+    assert_eq!(*row.revision.value().unwrap(), expected_revision);
 }
