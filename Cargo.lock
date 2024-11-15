@@ -10592,6 +10592,7 @@ dependencies = [
  "alloy-eips 0.4.2",
  "alloy-primitives",
  "alloy-rlp",
+ "alloy-rpc-types 0.4.2",
  "alloy-serde 0.4.2",
  "arbitrary",
  "bytes",
