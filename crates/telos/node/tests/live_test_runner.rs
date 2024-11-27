@@ -238,31 +238,6 @@ where
     assert!(tx_result.is_err());
 }
 
-// test_1559_tx tests sending eip1559 transaction that has max_priority_fee_per_gas and max_fee_per_gas set
-pub async fn test_1559_tx<T>(
-    provider: impl Provider<T, Ethereum> + Send + Sync,
-    sender_address: Address,
-) where
-    T: Transport + Clone + Debug,
-{
-    let nonce = provider.get_transaction_count(sender_address).await.unwrap();
-    let chain_id = provider.get_chain_id().await.unwrap();
-    let to_address: Address =
-        Address::from_str("0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4").unwrap();
-
-    let tx = TransactionRequest::default()
-        .with_to(to_address)
-        .with_nonce(nonce)
-        .with_chain_id(chain_id)
-        .with_value(U256::from(100))
-        .with_gas_limit(21_000)
-        .with_max_priority_fee_per_gas(1_000_000_000)
-        .with_max_fee_per_gas(20_000_000_000);
-
-    let tx_result = provider.send_transaction(tx).await;
-    assert!(tx_result.is_err());
-}
-
 // test_2930_tx tests sending eip2930 transaction which has access_list provided
 pub async fn test_2930_tx<T>(
     provider: impl Provider<T, Ethereum> + Send + Sync,

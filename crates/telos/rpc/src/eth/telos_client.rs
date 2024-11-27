@@ -1,16 +1,19 @@
+use std::future::Future;
 use std::sync::Arc;
-use reth_rpc_eth_types::error::EthResult;
+
+use antelope::{chain::Packer, name, StructPacker};
 use antelope::api::client::{APIClient, DefaultProvider};
-use antelope::chain::name::Name;
-use antelope::chain::private_key::PrivateKey;
-use antelope::{chain::{Packer, Encoder, Decoder}, name, StructPacker};
 use antelope::chain::action::{Action, PermissionLevel};
 use antelope::chain::checksum::Checksum160;
+use antelope::chain::name::Name;
+use antelope::chain::private_key::PrivateKey;
 use antelope::chain::transaction::{SignedTransaction, Transaction};
-use backoff::Exponential;
-use reth_rpc_eth_types::EthApiError;
-use std::future::Future;
 use tracing::{debug, error, warn};
+use antelope::serializer::Decoder;
+use antelope::serializer::Encoder;
+use backoff::Exponential;
+use reth_rpc_eth_types::error::EthResult;
+use reth_rpc_eth_types::EthApiError;
 
 /// A client to interact with a Telos node
 #[derive(Debug, Clone)]
@@ -74,9 +77,9 @@ mod backoff {
 }
 
 async fn retry<F, Fut, T>(mut call: F) -> Result<T, String>
-where
-    F: FnMut() -> Fut,
-    Fut: Future<Output = Result<T, String>>,
+    where
+        F: FnMut() -> Fut,
+        Fut: Future<Output=Result<T, String>>,
 {
     const RETRIES: usize = 12;
     let mut backoff = Exponential::default().take(RETRIES - 1);
@@ -150,18 +153,16 @@ impl TelosClient {
             context_free_data: vec![],
         };
 
-        let tx_response = retry(|| async {
+        let tx_response =
             self.inner
                 .api_client
                 .v1_chain
-                .send_transaction(signed_telos_transaction.clone())
+                .send_transaction2(signed_telos_transaction.clone(), None)
                 .await
                 .map_err(|error| {
                     warn!("{error:?}");
                     format!("{error:?}")
-                })
-        })
-        .await;
+                });
 
         let tx = match tx_response {
             Ok(value) => value,
