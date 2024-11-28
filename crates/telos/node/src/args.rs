@@ -45,6 +45,14 @@ pub struct TelosArgs {
     /// a batch of downloaded blocks.
     #[arg(long = "engine.max-execute-block-batch-size", requires = "experimental", default_value_t = DEFAULT_MAX_EXECUTE_BLOCK_BATCH_SIZE)]
     pub max_execute_block_batch_size: usize,
+
+    /// Enable Two-way storage compare between reth and telos
+    #[arg(long = "telos.two_way_storage_compare", default_value = "false")]
+    pub two_way_storage_compare: bool,
+
+    /// Block delta between native and EVM
+    #[arg(long = "telos.block_delta")]
+    pub block_delta: Option<u32>,
 }
 
 impl From<TelosArgs> for TelosClientArgs {

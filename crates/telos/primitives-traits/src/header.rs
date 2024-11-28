@@ -15,6 +15,7 @@ use alloy_rlp::{
     length_of_length, Buf, BufMut, Decodable, Encodable, EMPTY_LIST_CODE, EMPTY_STRING_CODE,
 };
 use core::mem;
+use alloy_rpc_types::ConversionError;
 use reth_codecs::Compact;
 use crate::TelosBlockExtension;
 
@@ -944,5 +945,37 @@ impl Compact for TelosHeader {
             extra_data: header.extra_data,
         };
         (alloy_header, buf)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl TryFrom<alloy_rpc_types::Header> for TelosHeader {
+    type Error = ConversionError;
+
+    fn try_from(header: alloy_rpc_types::Header) -> Result<Self, Self::Error> {
+        Ok(Self {
+            parent_hash: header.parent_hash,
+            ommers_hash: header.uncles_hash,
+            beneficiary: header.miner,
+            state_root: header.state_root,
+            transactions_root: header.transactions_root,
+            receipts_root: header.receipts_root,
+            logs_bloom: header.logs_bloom,
+            difficulty: header.difficulty,
+            number: header.number,
+            gas_limit: header.gas_limit,
+            gas_used: header.gas_used,
+            timestamp: header.timestamp,
+            extra_data: header.extra_data,
+            mix_hash: header.mix_hash.unwrap_or_default(),
+            nonce: header.nonce.unwrap_or_default(),
+            base_fee_per_gas: header.base_fee_per_gas,
+            withdrawals_root: header.withdrawals_root,
+            blob_gas_used: header.blob_gas_used,
+            excess_blob_gas: header.excess_blob_gas,
+            parent_beacon_block_root: header.parent_beacon_block_root,
+            requests_root: header.requests_root,
+            telos_block_extension: TelosBlockExtension::default(),
+        })
     }
 }

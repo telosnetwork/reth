@@ -1256,6 +1256,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "antelope-client"
+version = "0.3.0"
+source = "git+https://github.com/telosnetwork/antelope-rs?branch=master#fea2203b2edb5cfcedd5365031e5286b47dc5c66"
+dependencies = [
+ "antelope-client-macros",
+ "async-trait",
+ "base64 0.21.7",
+ "bs58",
+ "chrono",
+ "digest 0.10.7",
+ "ecdsa",
+ "flate2",
+ "hex",
+ "hmac 0.12.1",
+ "k256",
+ "log",
+ "once_cell",
+ "p256",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "reqwest 0.11.27",
+ "ripemd",
+ "serde",
+ "serde-big-array",
+ "serde_json",
+ "sha2 0.10.8",
+ "signature",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "antelope-client-macros"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5539,7 +5572,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -8755,6 +8788,7 @@ dependencies = [
  "revm-primitives",
  "secp256k1",
  "serde_json",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -9391,7 +9425,7 @@ dependencies = [
  "alloy-signer-local",
  "alloy-sol-types",
  "alloy-transport-http 0.4.2",
- "antelope-client",
+ "antelope-client 0.3.0",
  "clap",
  "derive_more 1.0.0",
  "env_logger 0.11.5",
@@ -9402,6 +9436,7 @@ dependencies = [
  "reth-basic-payload-builder",
  "reth-beacon-consensus",
  "reth-chainspec",
+ "reth-db",
  "reth-e2e-test-utils",
  "reth-ethereum-engine-primitives",
  "reth-ethereum-payload-builder",
@@ -9417,6 +9452,7 @@ dependencies = [
  "reth-rpc",
  "reth-stages",
  "reth-telos-rpc",
+ "reth-telos-rpc-engine-api 1.0.8",
  "reth-tracing",
  "reth-transaction-pool",
  "serde",
@@ -10556,6 +10592,7 @@ dependencies = [
  "alloy-eips 0.4.2",
  "alloy-primitives",
  "alloy-rlp",
+ "alloy-rpc-types 0.4.2",
  "alloy-serde 0.4.2",
  "arbitrary",
  "bytes",
@@ -10573,7 +10610,7 @@ dependencies = [
  "alloy-network 0.4.2",
  "alloy-primitives",
  "alloy-rpc-types 0.4.2",
- "antelope-client",
+ "antelope-client 0.3.0",
  "async-trait",
  "derive_more 1.0.0",
  "jsonrpsee-types",
@@ -10619,6 +10656,7 @@ dependencies = [
  "revm",
  "revm-primitives",
  "serde",
+ "sha2 0.10.8",
  "tracing",
 ]
 
@@ -10843,7 +10881,7 @@ dependencies = [
 [[package]]
 name = "revm"
 version = "14.0.3"
-source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#af62c2673affaa39636744b2383c9e980aed754c"
+source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#1706d6bea3f2771e4603e827994038a8786d1256"
 dependencies = [
  "auto_impl",
  "cfg-if",
@@ -10875,7 +10913,7 @@ dependencies = [
 [[package]]
 name = "revm-interpreter"
 version = "10.0.3"
-source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#af62c2673affaa39636744b2383c9e980aed754c"
+source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#1706d6bea3f2771e4603e827994038a8786d1256"
 dependencies = [
  "revm-primitives",
  "serde",
@@ -10884,7 +10922,7 @@ dependencies = [
 [[package]]
 name = "revm-precompile"
 version = "11.0.3"
-source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#af62c2673affaa39636744b2383c9e980aed754c"
+source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#1706d6bea3f2771e4603e827994038a8786d1256"
 dependencies = [
  "aurora-engine-modexp",
  "blst",
@@ -10903,7 +10941,7 @@ dependencies = [
 [[package]]
 name = "revm-primitives"
 version = "10.0.0"
-source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#af62c2673affaa39636744b2383c9e980aed754c"
+source = "git+https://github.com/telosnetwork/telos-revm?branch=telos-main#1706d6bea3f2771e4603e827994038a8786d1256"
 dependencies = [
  "alloy-eip2930",
  "alloy-eip7702",
@@ -12045,7 +12083,7 @@ dependencies = [
  "alloy",
  "alloy-consensus 0.3.6",
  "alloy-rlp",
- "antelope-client",
+ "antelope-client 0.2.1",
  "arrowbatch",
  "base64 0.22.1",
  "bytes",
@@ -12077,10 +12115,12 @@ dependencies = [
 name = "telos-reth"
 version = "1.0.8"
 dependencies = [
+ "alloy-primitives",
  "clap",
  "reth",
  "reth-chainspec",
  "reth-cli-util",
+ "reth-db",
  "reth-node-builder",
  "reth-node-telos",
  "reth-provider",
@@ -12097,7 +12137,7 @@ dependencies = [
  "alloy-consensus 0.3.6",
  "alloy-eips 0.3.6",
  "alloy-rlp",
- "antelope-client",
+ "antelope-client 0.2.1",
  "bytes",
  "clap",
  "dashmap 5.5.3",
@@ -13278,7 +13318,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

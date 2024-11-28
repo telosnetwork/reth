@@ -160,6 +160,8 @@ async fn testing_chain_sync() {
         persistence_threshold: 0,
         memory_block_buffer_target: 1,
         max_execute_block_batch_size: 100,
+        two_way_storage_compare: false,
+        block_delta: None,
     };
 
     let node_handle = NodeBuilder::new(node_config.clone())
