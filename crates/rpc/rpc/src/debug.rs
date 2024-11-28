@@ -879,6 +879,11 @@ where
 {
     /// Handler for `debug_getRawHeader`
     async fn raw_header(&self, block_id: BlockId) -> RpcResult<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let header = match block_id {
             BlockId::Hash(hash) => self.inner.provider.header(&hash.into()).to_rpc_result()?,
             BlockId::Number(number_or_tag) => {
@@ -902,6 +907,11 @@ where
 
     /// Handler for `debug_getRawBlock`
     async fn raw_block(&self, block_id: BlockId) -> RpcResult<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let block = self
             .inner
             .provider
@@ -925,6 +935,11 @@ where
     /// Handler for `debug_getRawTransactions`
     /// Returns the bytes of the transaction for the given hash.
     async fn raw_transactions(&self, block_id: BlockId) -> RpcResult<Vec<Bytes>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let block = self
             .inner
             .provider
@@ -936,6 +951,11 @@ where
 
     /// Handler for `debug_getRawReceipts`
     async fn raw_receipts(&self, block_id: BlockId) -> RpcResult<Vec<Bytes>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         Ok(self
             .inner
             .provider
@@ -991,6 +1011,11 @@ where
         block: BlockNumberOrTag,
         opts: Option<GethDebugTracingOptions>,
     ) -> RpcResult<Vec<TraceResult>> {
+        #[cfg(feature = "telos")]
+        let block = match block {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => block,
+        };
         let _permit = self.acquire_trace_permit().await;
         Self::debug_trace_block(self, block.into(), opts.unwrap_or_default())
             .await
@@ -1015,6 +1040,11 @@ where
         block: BlockNumberOrTag,
         include_preimages: bool,
     ) -> RpcResult<ExecutionWitness> {
+        #[cfg(feature = "telos")]
+        let block = match block {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => block,
+        };
         let _permit = self.acquire_trace_permit().await;
         Self::debug_execution_witness(self, block, include_preimages).await.map_err(Into::into)
     }
@@ -1026,6 +1056,11 @@ where
         block_id: Option<BlockId>,
         opts: Option<GethDebugTracingCallOptions>,
     ) -> RpcResult<GethTrace> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         Self::debug_trace_call(self, request, block_id, opts.unwrap_or_default())
             .await
