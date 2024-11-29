@@ -37,7 +37,7 @@ use reth::rpc::types::{TransactionInput, TransactionRequest};
 pub type TestProvider = FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, ReqwestProvider, Http<Client>, Ethereum>;
 
 #[tokio::test]
-async fn testing_lite_chain() {
+async fn testing_chain_sync() {
     env_logger::builder().is_test(true).try_init().unwrap();
 
     info!("Starting test node");
