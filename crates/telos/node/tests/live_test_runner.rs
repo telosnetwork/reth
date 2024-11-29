@@ -28,6 +28,7 @@ use reth::primitives::BlockNumberOrTag::Latest;
 
 use reth::primitives::revm_primitives::bytes::Bytes;
 use reth::revm::primitives::{AccessList, AccessListItem};
+use reth::rpc::server_types::eth::{EthApiError, RpcInvalidTransactionError};
 
 pub(crate) fn account_params(account: &str) -> GetTableRowsParams {
     GetTableRowsParams {
@@ -207,6 +208,9 @@ pub async fn test_blocknum_onchain(url: &str, private_key: &str) {
     test_unsigned_trx(provider.clone(), address).await;
     test_unsigned_trx2(provider.clone(), address).await;
     test_signed_trx(provider.clone(), address).await;
+    test_wrong_nonce(provider.clone(), address).await;
+    test_high_nonce(provider.clone(), address).await;
+
     // The below needs to be done using LegacyTransaction style call... with the current code it's including base_fee_per_gas and being rejected by reth
     // let block_num_latest = block_num_checker.getBlockNum().call().await.unwrap();
     // assert!(block_num_latest._0 > U256::from(rpc_block_num), "Latest block number via call to getBlockNum is not greater than the block number in the previous log event");
@@ -310,7 +314,6 @@ pub async fn test_double_approve_erc20<T>(
 
     let nonce = provider.get_transaction_count(sender_address).await.unwrap();
     tx.nonce = Some(nonce);
-    info!("Nonce: {}", nonce);
     // repeat approve
     let tx_result = provider.send_transaction(tx.clone()).await;
     assert!(tx_result.is_ok());
@@ -326,6 +329,59 @@ pub async fn test_double_approve_erc20<T>(
             break;
         }
     }
+}
+
+pub async fn test_wrong_nonce<T>(
+    provider: impl Provider<T, Ethereum> + Send + Sync,
+    sender_address: Address,
+) where
+    T: Transport + Clone + Debug,
+{
+    let chain_id = Some(provider.get_chain_id().await.unwrap());
+    let nonce = Some(0);
+    let legacy_tx = tx_trailing_empty_values().unwrap().tx().clone();
+    let legacy_tx_request = TransactionRequest {
+        from: Some(sender_address),
+        to: Some(legacy_tx.to),
+        gas: Some(legacy_tx.gas_limit as u64),
+        gas_price: Some(legacy_tx.gas_price),
+        value: Some(legacy_tx.value),
+        input: TransactionInput::from(legacy_tx.input),
+        nonce,
+        chain_id,
+        ..Default::default()
+    };
+
+    let tx_result = provider.send_transaction(legacy_tx_request).await;
+
+    assert!(tx_result.is_err());
+
+}
+
+pub async fn test_high_nonce<T>(
+    provider: impl Provider<T, Ethereum> + Send + Sync,
+    sender_address: Address,
+) where
+    T: Transport + Clone + Debug,
+{
+    let chain_id = Some(provider.get_chain_id().await.unwrap());
+    let nonce = Some(500);
+    let legacy_tx = tx_trailing_empty_values().unwrap().tx().clone();
+    let legacy_tx_request = TransactionRequest {
+        from: Some(sender_address),
+        to: Some(legacy_tx.to),
+        gas: Some(legacy_tx.gas_limit as u64),
+        gas_price: Some(legacy_tx.gas_price),
+        value: Some(legacy_tx.value),
+        input: TransactionInput::from(legacy_tx.input),
+        nonce,
+        chain_id,
+        ..Default::default()
+    };
+
+    let tx_result = provider.send_transaction(legacy_tx_request).await;
+
+    assert!(tx_result.is_err());
 }
 
 pub async fn test_incorrect_rlp<T>(

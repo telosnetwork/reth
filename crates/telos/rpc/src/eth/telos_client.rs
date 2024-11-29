@@ -1,19 +1,71 @@
+use std::fmt;
 use std::future::Future;
 use std::sync::Arc;
 
 use antelope::{chain::Packer, name, StructPacker};
 use antelope::api::client::{APIClient, DefaultProvider};
+use antelope::api::v1::structs::{ClientError, SendTransactionResponseError};
 use antelope::chain::action::{Action, PermissionLevel};
 use antelope::chain::checksum::Checksum160;
 use antelope::chain::name::Name;
 use antelope::chain::private_key::PrivateKey;
 use antelope::chain::transaction::{SignedTransaction, Transaction};
-use tracing::{debug, error, warn};
+use regex::Regex;
+use tracing::{debug, error};
 use antelope::serializer::Decoder;
 use antelope::serializer::Encoder;
+use derive_more::Display;
+
 use backoff::Exponential;
+use reth_rpc_eth_types::{EthApiError, RpcInvalidTransactionError};
 use reth_rpc_eth_types::error::EthResult;
-use reth_rpc_eth_types::EthApiError;
+
+#[derive(Debug)]
+struct TelosError(ClientError<SendTransactionResponseError>);
+
+impl fmt::Display for TelosError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl From<TelosError> for EthApiError {
+    fn from(err: TelosError) -> Self {
+        match err.0 {
+            ClientError::SERVER(server_error) => {
+                return parse_server_error(server_error.error);
+            }
+            // ClientError::SIMPLE(client_error) => {}
+            // ClientError::HTTP(http_error) => {}
+            // ClientError::ENCODING(encoding_error) => {}
+            // ClientError::NETWORK(network_error) => {}
+            _ => EthApiError::EvmCustom(err.to_string())
+        }
+    }
+}
+
+fn parse_server_error(error: SendTransactionResponseError) -> EthApiError {
+    for detail in error.details {
+        if detail.message.contains("Calling from_big_endian with oversized array") {
+            return EthApiError::EvmCustom(detail.message);
+        } else if detail.message.contains("Transaction gas price") { // TODO gas to high
+            return EthApiError::InvalidTransaction(RpcInvalidTransactionError::GasTooLow);
+        } else if detail.message.contains("incorrect nonce") {
+            let re = Regex::new(r"received (\d+) expected (\d+)").unwrap();
+            if let Some(captures) = re.captures(detail.message.as_str()) {
+                let received: u64 = captures.get(1).unwrap().as_str().parse().ok().unwrap();
+                let expected: u64 = captures.get(2).unwrap().as_str().parse().ok().unwrap();
+                if received < expected {
+                    return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooLow { tx: received, state: expected });
+                } else {
+                    return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooHigh);
+                }
+            }
+        }
+    }
+    EthApiError::EvmCustom("".to_string())
+}
+
 
 /// A client to interact with a Telos node
 #[derive(Debug, Clone)]
@@ -157,20 +209,19 @@ impl TelosClient {
             self.inner
                 .api_client
                 .v1_chain
-                .send_transaction2(signed_telos_transaction.clone(), None)
-                .await
-                .map_err(|error| {
-                    warn!("{error:?}");
-                    format!("{error:?}")
-                });
+                .send_transaction(signed_telos_transaction.clone())
+                .await;
+        //
+        // .map_err(|error| {
+        //     warn!("{error:?}");
+        //     format!("{error:?}")
+        // });
 
         let tx = match tx_response {
             Ok(value) => value,
             Err(err) => {
                 error!("Error sending transaction to Telos: {:?}", err);
-                return Err(EthApiError::EvmCustom(
-                    "Error sending transaction to Telos".to_string(),
-                ));
+                return Err(EthApiError::from(TelosError(err)));
             }
         };
 

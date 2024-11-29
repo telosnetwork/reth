@@ -10436,6 +10436,7 @@ dependencies = [
  "jsonrpsee-types",
  "log",
  "parking_lot 0.12.3",
+ "regex",
  "reth-chainspec",
  "reth-evm",
  "reth-network-api",

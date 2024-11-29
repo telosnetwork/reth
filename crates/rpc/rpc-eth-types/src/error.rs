@@ -5,6 +5,7 @@ use std::time::Duration;
 use alloy_primitives::{Address, Bytes, U256};
 use alloy_rpc_types::{error::EthRpcErrorCode, request::TransactionInputError, BlockError};
 use alloy_sol_types::decode_revert_reason;
+use jsonrpsee_core::ClientError;
 use reth_errors::RethError;
 use reth_primitives::{revm_primitives::InvalidHeader, BlockId};
 use reth_rpc_server_types::result::{
