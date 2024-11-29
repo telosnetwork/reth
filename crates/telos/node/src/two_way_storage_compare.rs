@@ -16,20 +16,20 @@ use reth::providers::StateProviderBox;
 use reth_db::{PlainAccountState, PlainStorageState};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, StructPacker)]
-struct AccountRow {
-    index: u64,
-    address: Checksum160,
-    account: Name,
-    nonce: u64,
-    code: Vec<u8>,
-    balance: Checksum256,
+pub struct AccountRow {
+    pub index: u64,
+    pub address: Checksum160,
+    pub account: Name,
+    pub nonce: u64,
+    pub code: Vec<u8>,
+    pub balance: Checksum256,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, StructPacker)]
-struct AccountStateRow {
-    index: u64,
-    key: Checksum256,
-    value: Checksum256,
+pub struct AccountStateRow {
+    pub index: u64,
+    pub key: Checksum256,
+    pub value: Checksum256,
 }
 
 /// This struct holds matching statistics
