@@ -24,7 +24,7 @@ use antelope::name;
 use antelope::chain::name::Name;
 
 pub mod utils;
-use crate::utils::cleos_evm::{EOSIO_ADDR, EOSIO_PKEY, EOSIO_WALLET, get_nonce, multi_raw_eth_tx, sign_native_tx};
+use crate::utils::cleos_evm::{EOSIO_ADDR, EOSIO_PKEY, EOSIO_SIGNER, EOSIO_WALLET, get_nonce, multi_raw_eth_tx, setrevision_tx, sign_native_tx};
 use crate::utils::runners::{build_consensus_and_translator, CONTAINER_LAST_EVM_BLOCK_LITE, CONTAINER_NAME_LITE, CONTAINER_TAG_LITE, init_reth, start_ship, TelosRethNodeHandle};
 
 use alloy_provider::{Identity, Provider, ProviderBuilder, ReqwestProvider};
@@ -147,6 +147,13 @@ pub async fn run_tests(
         reth_provider,
         Address::from_hex("0000000000000000deadbeef0000000000000000").unwrap()
     ).await;
+
+    // set revision to 1
+    let info = telos_client.v1_chain.get_info().await.unwrap();
+    let eosio_key = PrivateKey::from_str(EOSIO_PKEY, false).unwrap();
+    let unsigned_rev_tx = setrevision_tx(&info, 1);
+    let rev_tx = sign_native_tx(&unsigned_rev_tx, &info, &eosio_key);
+    telos_client.v1_chain.send_transaction(rev_tx).await.unwrap();
 
     test_blocknum_onchain(reth_provider).await;
 }

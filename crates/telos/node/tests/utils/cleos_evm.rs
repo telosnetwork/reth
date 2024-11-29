@@ -63,6 +63,34 @@ pub async fn get_nonce(client: &APIClient<DefaultProvider>, address: &Address) -
 }
 
 #[allow(dead_code)]
+pub fn setrevision_tx(
+    info: &GetInfoResponse,
+    new_revision: u32
+) -> Transaction {
+    #[derive(Clone, Eq, PartialEq, Default, StructPacker)]
+    struct SetRevision {
+        new_revision: u32,
+    }
+
+    let raw_data = SetRevision {
+        new_revision
+    };
+    let rev_act = Action::new_ex(
+        name!("eosio.evm"),
+        name!("setrevision"),
+        vec![PermissionLevel::new(name!("eosio.evm"), name!("active"))],
+        raw_data,
+    );
+
+    Transaction {
+        header: info.get_transaction_header(90),
+        context_free_actions: vec![],
+        actions: vec![rev_act],
+        extension: vec![],
+    }
+}
+
+#[allow(dead_code)]
 pub async fn raw_eth_tx(
     info: &GetInfoResponse,
     ram_payer: Name,
