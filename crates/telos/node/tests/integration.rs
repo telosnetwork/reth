@@ -1,147 +1,52 @@
-use alloy_provider::{Provider, ProviderBuilder};
+use std::str::FromStr;
 use antelope::api::client::{APIClient, DefaultProvider};
-use reqwest::Url;
 use reth::{
-    args::RpcServerArgs,
-    builder::{NodeBuilder, NodeConfig},
+    builder::NodeBuilder,
     tasks::TaskManager,
 };
-use reth_chainspec::{ChainSpec, ChainSpecBuilder, TEVMTESTNET};
 use reth_e2e_test_utils::node::NodeTestContext;
 use reth_node_telos::{TelosArgs, TelosNode};
 use reth_telos_rpc::TelosClient;
-use std::{fs, path::PathBuf, sync::Arc, time::Duration};
-use telos_consensus_client::{
-    client::ConsensusClient,
-    config::{AppConfig, CliArgs},
-    main_utils::build_consensus_client,
-};
-use telos_translator_rs::{
-    block::TelosEVMBlock, translator::Translator, types::translator_types::ChainId,
-};
-use testcontainers::{
-    core::ContainerPort::Tcp, runners::AsyncRunner, ContainerAsync, GenericImage,
-};
+use std::time::Duration;
+use alloy_network::{Ethereum, EthereumWallet, ReceiptResponse, TransactionBuilder};
+use alloy_primitives::{Address, B256, Bytes, keccak256, U256};
+use alloy_primitives::hex::FromHex;
+use alloy_primitives::TxKind::Create;
+use telos_translator_rs::block::TelosEVMBlock;
 use tokio::sync::mpsc;
+use tracing::{info, warn};
+use reth::primitives::BlockId;
+use alloy_rpc_types::{AccessList, AccessListItem, BlockTransactionsKind};
+use alloy_transport_http::Http;
+use antelope::chain::action::PermissionLevel;
+use antelope::chain::private_key::PrivateKey;
+use antelope::name;
+use antelope::chain::name::Name;
 
-pub mod live_test_runner;
+pub mod utils;
+use crate::utils::cleos_evm::{EOSIO_ADDR, EOSIO_PKEY, EOSIO_WALLET, get_nonce, multi_raw_eth_tx, setrevision_tx, sign_native_tx};
+use crate::utils::runners::{build_consensus_and_translator, CONTAINER_LAST_EVM_BLOCK_LITE, CONTAINER_NAME_LITE, CONTAINER_TAG_LITE, init_reth, start_ship, TelosRethNodeHandle};
 
-struct TelosRethNodeHandle {
-    execution_port: u16,
-    jwt_secret: String,
-}
+use alloy_provider::{Identity, Provider, ProviderBuilder, ReqwestProvider};
+use alloy_provider::fillers::{FillProvider, JoinFill, WalletFiller};
+use alloy_rpc_types::BlockNumberOrTag::Latest;
+use alloy_sol_types::{sol, SolEvent};
+use reqwest::{Client, Url};
+use reth::rpc::types::{TransactionInput, TransactionRequest};
 
-const CONTAINER_TAG: &str =
-    "v0.1.11@sha256:d138f2e08db108d5d420b4db99a57fb9d45a3ee3e0f0faa7d4c4a065f7f018ce";
-
-// This is the last block in the container, after this block the node is done syncing and is running live
-const CONTAINER_LAST_EVM_BLOCK: u64 = 1010;
-
-async fn start_ship() -> ContainerAsync<GenericImage> {
-    // Change this container to a local image if using new ship data,
-    //   then make sure to update the ship data in the testcontainer-nodeos-evm repo and build a new version
-
-    // The tag for this image needs to come from the Github packages UI, under the "OS/Arch" tab
-    //   and should be the tag for linux/amd64
-    let container: ContainerAsync<GenericImage> =
-        GenericImage::new("ghcr.io/telosnetwork/testcontainer-nodeos-evm", CONTAINER_TAG)
-            .with_exposed_port(Tcp(8888))
-            .with_exposed_port(Tcp(18999))
-            .start()
-            .await
-            .unwrap();
-
-    let port_8888 = container.get_host_port_ipv4(8888).await.unwrap();
-
-    let api_base_url = format!("http://localhost:{port_8888}");
-    let api_client = APIClient::<DefaultProvider>::default_provider(api_base_url, Some(1)).unwrap();
-
-    let mut last_block = 0;
-
-    loop {
-        let Ok(info) = api_client.v1_chain.get_info().await else {
-            println!("Waiting for telos node to produce blocks...");
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-            continue;
-        };
-        if last_block != 0 && info.head_block_num > last_block {
-            break;
-        }
-        last_block = info.head_block_num;
-    }
-
-    container
-}
-
-fn init_reth() -> eyre::Result<(NodeConfig<ChainSpec>, String)> {
-    let chain_spec = Arc::new(
-        ChainSpecBuilder::default()
-            .chain(TEVMTESTNET.chain)
-            .genesis(TEVMTESTNET.genesis.clone())
-            .frontier_activated()
-            .homestead_activated()
-            .tangerine_whistle_activated()
-            .spurious_dragon_activated()
-            .byzantium_activated()
-            .constantinople_activated()
-            .petersburg_activated()
-            .istanbul_activated()
-            .berlin_activated()
-            .build(),
-    );
-
-    let mut rpc_config = RpcServerArgs::default().with_unused_ports().with_http();
-    rpc_config.auth_jwtsecret = Some(PathBuf::from("tests/assets/jwt.hex"));
-
-    // Node setup
-    let node_config = NodeConfig::test().with_chain(chain_spec).with_rpc(rpc_config.clone());
-
-    let jwt = fs::read_to_string(node_config.rpc.auth_jwtsecret.clone().unwrap())?;
-    Ok((node_config, jwt))
-}
-
-async fn build_consensus_and_translator(
-    reth_handle: TelosRethNodeHandle,
-    ship_port: u16,
-    chain_port: u16,
-) -> (ConsensusClient, Translator) {
-    let config = AppConfig {
-        log_level: "debug".to_string(),
-        chain_id: ChainId(41),
-        execution_endpoint: format!("http://localhost:{}", reth_handle.execution_port),
-        jwt_secret: reth_handle.jwt_secret,
-        ship_endpoint: format!("ws://localhost:{ship_port}"),
-        chain_endpoint: format!("http://localhost:{chain_port}"),
-        batch_size: 1,
-        prev_hash: "b25034033c9ca7a40e879ddcc29cf69071a22df06688b5fe8cc2d68b4e0528f9".to_string(),
-        validate_hash: None,
-        evm_start_block: 1,
-        // TODO: Determine a good stop block and test it here
-        evm_stop_block: None,
-        data_path: "temp/db".to_string(),
-        block_checkpoint_interval: 1000,
-        maximum_sync_range: 100000,
-        latest_blocks_in_db_num: 100,
-        max_retry: None,
-        retry_interval: None,
-    };
-
-    let cli_args = CliArgs { config: "".to_string(), clean: true };
-
-    let c = build_consensus_client(&cli_args, config).await.unwrap();
-    let translator = Translator::new((&c.config).into());
-
-    (c, translator)
-}
+pub type TestProvider = FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, ReqwestProvider, Http<Client>, Ethereum>;
 
 #[tokio::test]
 async fn testing_chain_sync() {
-    tracing_subscriber::fmt::init();
+    env_logger::builder().is_test(true).try_init().unwrap();
 
-    println!("Starting test node");
-    let container = start_ship().await;
+    info!("Starting test node");
+    let container = start_ship(CONTAINER_NAME_LITE, CONTAINER_TAG_LITE).await;
     let chain_port = container.get_host_port_ipv4(8888).await.unwrap();
     let ship_port = container.get_host_port_ipv4(18999).await.unwrap();
+
+    let telos_url = format!("http://localhost:{}", chain_port);
+    let telos_client = APIClient::<DefaultProvider>::default_provider(telos_url, Some(1)).unwrap();
 
     let (node_config, jwt_secret) = init_reth().unwrap();
 
@@ -181,9 +86,9 @@ async fn testing_chain_sync() {
     let execution_port = node_handle.node.auth_server_handle().local_addr().port();
     let rpc_port = node_handle.node.rpc_server_handles.rpc.http_local_addr().unwrap().port();
     let reth_handle = TelosRethNodeHandle { execution_port, jwt_secret };
-    println!("Starting Reth on RPC port {}!", rpc_port);
+    info!("Starting Reth on RPC port {}!", rpc_port);
     let _ = NodeTestContext::new(node_handle.node.clone()).await.unwrap();
-    println!("Starting consensus on RPC port {}!", rpc_port);
+    info!("Starting consensus on RPC port {}!", rpc_port);
     let (client, translator) =
         build_consensus_and_translator(reth_handle, ship_port, chain_port).await;
 
@@ -192,39 +97,300 @@ async fn testing_chain_sync() {
 
     let (block_sender, block_receiver) = mpsc::channel::<TelosEVMBlock>(1000);
 
-    println!("Telos consensus client starting, awaiting result...");
+    info!("Telos consensus client starting, awaiting result...");
     let client_handle = tokio::spawn(client.run(block_receiver));
 
-    println!("Telos translator client is starting...");
+    info!("Telos translator client is starting...");
     let translator_handle = tokio::spawn(translator.launch(Some(block_sender)));
 
     let rpc_url = Url::from(format!("http://localhost:{}", rpc_port).parse().unwrap());
-    let provider = ProviderBuilder::new().on_http(rpc_url.clone());
+    let reth_provider = ProviderBuilder::new()
+        .wallet(EOSIO_WALLET.clone())
+        .on_http(rpc_url.clone());
 
     loop {
         tokio::time::sleep(Duration::from_secs(1)).await;
-        let latest_block = provider.get_block_number().await.unwrap();
-        println!("Latest block: {latest_block}");
+        let latest_block = reth_provider.get_block_number().await.unwrap();
+        info!("Latest block: {latest_block}");
         if client_handle.is_finished() {
             _ = translator_shutdown.shutdown().await.unwrap();
             break;
         }
-        if latest_block > CONTAINER_LAST_EVM_BLOCK {
+        if latest_block > CONTAINER_LAST_EVM_BLOCK_LITE {
             break;
         }
     }
 
-    live_test_runner::run_tests(
-        &rpc_url.clone().to_string(),
-        "87ef69a835f8cd0c44ab99b7609a20b2ca7f1c8470af4f0e5b44db927d542084",
-    )
-    .await;
+    run_tests(&telos_client, &reth_provider).await;
 
     _ = translator_shutdown.shutdown().await.unwrap();
     _ = consensus_shutdown.shutdown().await.unwrap();
 
-    println!("Client shutdown done.");
+    info!("Client shutdown done.");
 
     _ = tokio::join!(client_handle, translator_handle);
-    println!("Translator shutdown done.");
+    info!("Translator shutdown done.");
+}
+
+pub async fn run_tests(
+    telos_client: &APIClient<DefaultProvider>,
+    reth_provider: &TestProvider
+) {
+    let balance = reth_provider.get_balance(EOSIO_ADDR.clone()).await.unwrap();
+    info!("Running live tests using address: {:?} with balance: {:?}", EOSIO_ADDR.to_string(), balance);
+
+    let block = reth_provider.get_block(BlockId::latest(), BlockTransactionsKind::Full).await;
+    info!("Latest block:\n {:?}", block);
+
+    test_1k_txs(
+        telos_client,
+        reth_provider,
+        Address::from_hex("0000000000000000deadbeef0000000000000000").unwrap()
+    ).await;
+
+    // set revision to 1
+    let info = telos_client.v1_chain.get_info().await.unwrap();
+    let eosio_key = PrivateKey::from_str(EOSIO_PKEY, false).unwrap();
+    let unsigned_rev_tx = setrevision_tx(&info, 1);
+    let rev_tx = sign_native_tx(&unsigned_rev_tx, &info, &eosio_key);
+    telos_client.v1_chain.send_transaction(rev_tx).await.unwrap();
+
+    test_blocknum_onchain(reth_provider).await;
+}
+
+pub async fn test_blocknum_onchain(reth_provider: &TestProvider) {
+    sol! {
+        #[sol(rpc, bytecode="6080604052348015600e575f80fd5b5060ef8061001b5f395ff3fe6080604052348015600e575f80fd5b50600436106030575f3560e01c80637f6c6f101460345780638fb82b0214604e575b5f80fd5b603a6056565b6040516045919060a2565b60405180910390f35b6054605d565b005b5f43905090565b437fc04eeb4cfe0799838abac8fa75bca975bff679179886c80c84a7b93229a1a61860405160405180910390a2565b5f819050919050565b609c81608c565b82525050565b5f60208201905060b35f8301846095565b9291505056fea264697066735822122003482ecf0ea4d820deb6b5ebd2755b67c3c8d4fb9ed50a8b4e0bce59613552df64736f6c634300081a0033")]
+        contract BlockNumChecker {
+
+            event BlockNumber(uint256 indexed number);
+
+            function getBlockNum() public view returns (uint) {
+                return block.number;
+            }
+
+            function logBlockNum() public {
+                emit BlockNumber(block.number);
+            }
+        }
+    }
+
+    info!("Deploying contract using address {}", EOSIO_ADDR.to_string());
+
+    let nonce = reth_provider.get_transaction_count(EOSIO_ADDR.clone()).await.unwrap();
+    let chain_id = reth_provider.get_chain_id().await.unwrap();
+    let gas_price = reth_provider.get_gas_price().await.unwrap();
+
+    let legacy_tx = alloy_consensus::TxLegacy {
+        chain_id: Some(chain_id),
+        nonce,
+        gas_price: gas_price.into(),
+        gas_limit: 20_000_000,
+        to: Create,
+        value: U256::ZERO,
+        input: BlockNumChecker::BYTECODE.to_vec().into(),
+    };
+
+    let legacy_tx_request = TransactionRequest {
+        from: Some(EOSIO_ADDR.clone()),
+        to: Some(legacy_tx.to),
+        gas: Some(legacy_tx.gas_limit),
+        gas_price: Some(legacy_tx.gas_price),
+        value: Some(legacy_tx.value),
+        input: TransactionInput::from(legacy_tx.input),
+        nonce: Some(legacy_tx.nonce),
+        chain_id: legacy_tx.chain_id,
+        ..Default::default()
+    };
+
+    let deploy_result = reth_provider.send_transaction(legacy_tx_request.clone()).await.unwrap();
+
+    let deploy_tx_hash = deploy_result.tx_hash();
+    info!("Deployed contract with tx hash: {deploy_tx_hash}");
+    let receipt = deploy_result.get_receipt().await.unwrap();
+    info!("Receipt: {:?}", receipt);
+
+    let contract_address = receipt.contract_address().unwrap();
+    let block_num_checker = BlockNumChecker::new(contract_address, reth_provider.clone());
+
+    let legacy_tx_request = TransactionRequest::default()
+        .with_from(EOSIO_ADDR.clone())
+        .with_to(contract_address)
+        .with_gas_limit(20_000_000)
+        .with_gas_price(gas_price)
+        .with_input(block_num_checker.logBlockNum().calldata().clone())
+        .with_nonce(reth_provider.get_transaction_count(EOSIO_ADDR.clone()).await.unwrap())
+        .with_chain_id(chain_id);
+
+    let log_block_num_tx_result = reth_provider.send_transaction(legacy_tx_request).await.unwrap();
+
+    let log_block_num_tx_hash = log_block_num_tx_result.tx_hash();
+    info!("Called contract with tx hash: {log_block_num_tx_hash}");
+    let receipt = log_block_num_tx_result.get_receipt().await.unwrap();
+    info!("log block number receipt: {:?}", receipt);
+    let rpc_block_num = receipt.block_number().unwrap();
+    let receipt = receipt.inner;
+    let logs = receipt.logs();
+    let first_log = logs[0].clone().inner;
+    let block_num_event = BlockNumChecker::BlockNumber::decode_log(&first_log, true).unwrap();
+    assert_eq!(U256::from(rpc_block_num), block_num_event.number);
+    info!("Block numbers match inside transaction event");
+
+    // test eip1559 transaction which is not supported
+    test_1559_tx(reth_provider, EOSIO_ADDR.clone()).await;
+    // test eip2930 transaction which is not supported
+    test_2930_tx(reth_provider, EOSIO_ADDR.clone()).await;
+    //  test double approve erc20 call
+    test_double_approve_erc20(reth_provider, EOSIO_ADDR.clone()).await;
+    // The below needs to be done using LegacyTransaction style call... with the current code it's including base_fee_per_gas and being rejected by reth
+    // let block_num_latest = block_num_checker.getBlockNum().call().await.unwrap();
+    // assert!(block_num_latest._0 > U256::from(rpc_block_num), "Latest block number via call to getBlockNum is not greater than the block number in the previous log event");
+    //
+    // let block_num_five_back = block_num_checker.getBlockNum().call().block(BlockId::number(rpc_block_num - 5)).await.unwrap();
+    // assert!(block_num_five_back._0 == U256::from(rpc_block_num - 5), "Block number 5 blocks back via historical eth_call is not correct");
+
+}
+
+// test_1559_tx tests sending eip1559 transaction that has max_priority_fee_per_gas and max_fee_per_gas set
+pub async fn test_1559_tx(provider: &TestProvider, sender_address: Address) {
+    let nonce = provider.get_transaction_count(sender_address).await.unwrap();
+    let chain_id = provider.get_chain_id().await.unwrap();
+    let to_address: Address = Address::from_str("0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4").unwrap();
+
+    let tx = TransactionRequest::default()
+        .with_to(to_address)
+        .with_nonce(nonce)
+        .with_chain_id(chain_id)
+        .with_value(U256::from(100))
+        .with_gas_limit(21_000)
+        .with_max_priority_fee_per_gas(1_000_000_000)
+        .with_max_fee_per_gas(20_000_000_000);
+
+    let tx_result = provider.send_transaction(tx).await;
+    assert!(tx_result.is_err());
+}
+
+// test_2930_tx tests sending eip2930 transaction which has access_list provided
+pub async fn test_2930_tx(provider: &TestProvider, sender_address: Address) {
+    let nonce = provider.get_transaction_count(sender_address).await.unwrap();
+    let chain_id = provider.get_chain_id().await.unwrap();
+    let gas_price = provider.get_gas_price().await.unwrap();
+
+    let to_address: Address = Address::from_str("0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4").unwrap();
+    let tx = TransactionRequest::default()
+        .to(to_address)
+        .nonce(nonce)
+        .value(U256::from(1e17))
+        .with_chain_id(chain_id)
+        .with_gas_price(gas_price)
+        .with_gas_limit(20_000_000)
+        .max_priority_fee_per_gas(1e11 as u128)
+        .with_access_list(AccessList::from(vec![AccessListItem { address: to_address, storage_keys: vec![B256::ZERO] }]))
+        .max_fee_per_gas(2e9 as u128);
+    let tx_result = provider.send_transaction(tx).await;
+    assert!(tx_result.is_err());
+}
+
+
+// test_double_approve_erc20 sends 2 transactions for approve on the ERC20 token and asserts that only once it is success
+pub async fn test_double_approve_erc20(
+    provider: &TestProvider,
+    sender_address: Address,
+) {
+    let nonce = provider.get_transaction_count(sender_address).await.unwrap();
+    let chain_id = provider.get_chain_id().await.unwrap();
+    let gas_price = provider.get_gas_price().await.unwrap();
+
+    let erc20_contract_address: Address =
+        "0x49f54c5e2301eb9256438123e80762470c2c7ec2".parse().unwrap();
+    let spender: Address = "0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4".parse().unwrap();
+    let function_signature = "approve(address,uint256)";
+    let amount: U256 = U256::from(0);
+    let selector = &keccak256(function_signature.as_bytes())[..4];
+    let amount_bytes: [u8; 32] = amount.to_be_bytes();
+    let mut encoded_data = Vec::new();
+    encoded_data.extend_from_slice(selector);
+    encoded_data.extend_from_slice(spender.as_ref());
+    encoded_data.extend_from_slice(&amount_bytes);
+    let input_data = Bytes::from(encoded_data);
+
+    // Build approve transaction
+    let mut tx = TransactionRequest::default()
+        .to(erc20_contract_address)
+        .with_input(input_data)
+        .nonce(nonce)
+        .value(U256::from(10))
+        .with_chain_id(chain_id)
+        .with_gas_price(gas_price)
+        .with_gas_limit(20_000_000);
+
+    // call approve
+    let tx_result = provider.send_transaction(tx.clone()).await;
+    assert!(tx_result.is_ok());
+    let receipt1 = tx_result.unwrap().get_receipt().await;
+    assert!(receipt1.is_ok());
+
+    let nonce = provider.get_transaction_count(sender_address).await.unwrap();
+    tx.nonce = Some(nonce);
+
+    // repeat approve
+    let tx_result = provider.send_transaction(tx.clone()).await;
+    assert!(tx_result.is_ok());
+
+    let receipt2 = tx_result.unwrap().get_receipt().await;
+    assert!(receipt2.is_ok());
+
+    let block_number = receipt2.unwrap().block_number.unwrap();
+
+    // make sure the block is included
+    while let Some(block) = provider.get_block_by_number(Latest, false).await.unwrap() {
+        if block.header.number == block_number {
+            break;
+        }
+    }
+}
+
+pub async fn test_1k_txs(
+    telos_client: &APIClient<DefaultProvider>,
+    reth_provider: &TestProvider,
+    target_addr: Address
+) {
+    let chain_id = reth_provider.get_chain_id().await.unwrap();
+    let gas_price = reth_provider.get_gas_price().await.unwrap();
+
+    let eosio_key = PrivateKey::from_str(EOSIO_PKEY, false).unwrap();
+
+    let start_nonce = get_nonce(&telos_client, &EOSIO_ADDR).await;
+
+    for _i in 0..2 {
+        let info = telos_client.v1_chain.get_info().await.unwrap();
+        let nonce = get_nonce(&telos_client, &EOSIO_ADDR).await;
+        let tx = multi_raw_eth_tx(
+            500,
+            &info,
+            name!("eosio"),
+            PermissionLevel::new(name!("eosio"), name!("active")),
+            false,
+            None,
+            &EOSIO_WALLET,
+            chain_id,
+            nonce,
+            EOSIO_ADDR.clone(),
+            target_addr,
+            gas_price,
+            20_000_000,
+            U256::from(10)
+        ).await;
+
+        let signed_tx = sign_native_tx(&tx, &info, &eosio_key);
+
+        let result = telos_client.v1_chain.send_transaction(signed_tx).await.unwrap();
+
+        warn!("500 txs in block {}", result.processed.block_num);
+        tokio::time::sleep(Duration::from_millis(750)).await;
+    }
+
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    let last_nonce = get_nonce(&telos_client, &EOSIO_ADDR).await;
+    assert_eq!(last_nonce - start_nonce, 1000);
 }

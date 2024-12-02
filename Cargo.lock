@@ -1257,8 +1257,8 @@ dependencies = [
 
 [[package]]
 name = "antelope-client"
-version = "0.3.0"
-source = "git+https://github.com/telosnetwork/antelope-rs?branch=master#fea2203b2edb5cfcedd5365031e5286b47dc5c66"
+version = "0.3.1"
+source = "git+https://github.com/telosnetwork/antelope-rs?rev=c485ff3e0a3e247c85c204b41144765accefbbc3#c485ff3e0a3e247c85c204b41144765accefbbc3"
 dependencies = [
  "antelope-client-macros",
  "async-trait",
@@ -9425,11 +9425,12 @@ dependencies = [
  "alloy-signer-local",
  "alloy-sol-types",
  "alloy-transport-http 0.4.2",
- "antelope-client 0.3.0",
+ "antelope-client 0.3.1",
  "clap",
  "derive_more 1.0.0",
  "env_logger 0.11.5",
  "eyre",
+ "lazy_static",
  "reqwest 0.12.8",
  "reth",
  "reth-auto-seal-consensus",
@@ -10610,7 +10611,7 @@ dependencies = [
  "alloy-network 0.4.2",
  "alloy-primitives",
  "alloy-rpc-types 0.4.2",
- "antelope-client 0.3.0",
+ "antelope-client 0.3.1",
  "async-trait",
  "derive_more 1.0.0",
  "jsonrpsee-types",
