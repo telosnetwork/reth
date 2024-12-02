@@ -78,6 +78,11 @@ where
 
     /// Handler for `ots_hasCode`
     async fn has_code(&self, address: Address, block_id: Option<BlockId>) -> RpcResult<bool> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         EthApiServer::get_code(&self.eth, address, block_id).await.map(|code| !code.is_empty())
     }
 
