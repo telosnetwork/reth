@@ -2,23 +2,25 @@ use std::fmt;
 use std::future::Future;
 use std::sync::Arc;
 
-use antelope::{chain::Packer, name, StructPacker};
 use antelope::api::client::{APIClient, DefaultProvider};
-use antelope::api::v1::structs::{ClientError, SendTransactionResponseError};
+use antelope::api::v1::structs::{
+    ClientError, EncodingError, HTTPError, SendTransactionResponseError, SimpleError,
+};
 use antelope::chain::action::{Action, PermissionLevel};
 use antelope::chain::checksum::Checksum160;
 use antelope::chain::name::Name;
 use antelope::chain::private_key::PrivateKey;
 use antelope::chain::transaction::{SignedTransaction, Transaction};
-use regex::Regex;
-use tracing::{debug, error};
 use antelope::serializer::Decoder;
 use antelope::serializer::Encoder;
+use antelope::{chain::Packer, name, StructPacker};
 use derive_more::Display;
+use regex::Regex;
+use tracing::{debug, error};
 
 use backoff::Exponential;
-use reth_rpc_eth_types::{EthApiError, RpcInvalidTransactionError};
 use reth_rpc_eth_types::error::EthResult;
+use reth_rpc_eth_types::{EthApiError, RpcInvalidTransactionError};
 
 #[derive(Debug)]
 struct TelosError(ClientError<SendTransactionResponseError>);
@@ -32,40 +34,44 @@ impl fmt::Display for TelosError {
 impl From<TelosError> for EthApiError {
     fn from(err: TelosError) -> Self {
         match err.0 {
-            ClientError::SERVER(server_error) => {
-                return parse_server_error(server_error.error);
-            }
-            // ClientError::SIMPLE(client_error) => {}
-            // ClientError::HTTP(http_error) => {}
-            // ClientError::ENCODING(encoding_error) => {}
-            // ClientError::NETWORK(network_error) => {}
-            _ => EthApiError::EvmCustom(err.to_string())
+            ClientError::SERVER(server_error) => parse_server_error(server_error.error),
+            ClientError::SIMPLE(client_error) => EthApiError::EvmCustom(client_error.message),
+            ClientError::HTTP(http_error) => EthApiError::EvmCustom(http_error.message),
+            ClientError::ENCODING(encoding_error) => EthApiError::EvmCustom(encoding_error.message),
+            ClientError::NETWORK(network_error) => EthApiError::EvmCustom(network_error),
+            _ => EthApiError::EvmCustom(err.to_string()),
         }
     }
 }
 
-fn parse_server_error(error: SendTransactionResponseError) -> EthApiError {
-    for detail in error.details {
-        if detail.message.contains("Calling from_big_endian with oversized array") {
-            return EthApiError::EvmCustom(detail.message);
-        } else if detail.message.contains("Transaction gas price") { // TODO gas to high
+fn parse_server_error(server_error: SendTransactionResponseError) -> EthApiError {
+    for message in server_error.details.iter().map(|details| &details.message) {
+        if message.contains("Calling from_big_endian with oversized array") {
+            return EthApiError::FailedToDecodeSignedTransaction;
+        }
+        if message.contains("Transaction gas price") {
+            // TODO: gas to high
             return EthApiError::InvalidTransaction(RpcInvalidTransactionError::GasTooLow);
-        } else if detail.message.contains("incorrect nonce") {
-            let re = Regex::new(r"received (\d+) expected (\d+)").unwrap();
-            if let Some(captures) = re.captures(detail.message.as_str()) {
-                let received: u64 = captures.get(1).unwrap().as_str().parse().ok().unwrap();
-                let expected: u64 = captures.get(2).unwrap().as_str().parse().ok().unwrap();
-                if received < expected {
-                    return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooLow { tx: received, state: expected });
-                } else {
-                    return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooHigh);
-                }
-            }
         }
+        if !message.contains("incorrect nonce") {
+            return EthApiError::EvmCustom(message.to_string());
+        }
+        let re = Regex::new(r"received (\d+) expected (\d+)").unwrap();
+        let Some(captures) = re.captures(&message) else {
+            return EthApiError::EvmCustom(message.to_string());
+        };
+        let received: u64 = captures.get(1).unwrap().as_str().parse().ok().unwrap();
+        let expected: u64 = captures.get(2).unwrap().as_str().parse().ok().unwrap();
+        if received < expected {
+            return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooLow {
+                tx: received,
+                state: expected,
+            });
+        }
+        return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooHigh);
     }
-    EthApiError::EvmCustom("".to_string())
+    EthApiError::EvmCustom(server_error.what)
 }
-
 
 /// A client to interact with a Telos node
 #[derive(Debug, Clone)]
@@ -129,9 +135,9 @@ mod backoff {
 }
 
 async fn retry<F, Fut, T>(mut call: F) -> Result<T, String>
-    where
-        F: FnMut() -> Fut,
-        Fut: Future<Output=Result<T, String>>,
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<T, String>>,
 {
     const RETRIES: usize = 12;
     let mut backoff = Exponential::default().take(RETRIES - 1);
@@ -157,7 +163,11 @@ impl TelosClient {
         {
             panic!("Should not construct TelosClient without proper TelosArgs with telos_endpoint and signer args");
         }
-        let api_client = APIClient::<DefaultProvider>::default_provider(telos_client_args.telos_endpoint.unwrap().into(), Some(3)).unwrap();
+        let api_client = APIClient::<DefaultProvider>::default_provider(
+            telos_client_args.telos_endpoint.unwrap().into(),
+            Some(3),
+        )
+        .unwrap();
         let inner = TelosClientInner {
             api_client,
             signer_account: name!(&telos_client_args.signer_account.unwrap()),
@@ -206,11 +216,7 @@ impl TelosClient {
         };
 
         let tx_response =
-            self.inner
-                .api_client
-                .v1_chain
-                .send_transaction(signed_telos_transaction.clone())
-                .await;
+            self.inner.api_client.v1_chain.send_transaction(signed_telos_transaction.clone()).await;
         //
         // .map_err(|error| {
         //     warn!("{error:?}");
