@@ -5,9 +5,10 @@ use alloy_primitives::{hex, keccak256, Address, Signature, B256, U256};
 use alloy_provider::network::EthereumWallet;
 use alloy_provider::{Provider, ProviderBuilder};
 use alloy_rpc_types::TransactionRequest;
+use std::error::Error;
 
 use alloy_signer_local::PrivateKeySigner;
-use alloy_sol_types::private::primitives::TxKind::{Create};
+use alloy_sol_types::private::primitives::TxKind::Create;
 use alloy_sol_types::{sol, SolEvent};
 use antelope::api::v1::structs::{GetTableRowsParams, IndexPosition, TableIndexType};
 use antelope::chain::binary_extension::BinaryExtension;
@@ -18,13 +19,13 @@ use antelope::{name, StructPacker};
 use num_bigint::{BigUint, ToBigUint};
 use reqwest::Url;
 use reth::primitives::BlockId;
+use reth::primitives::BlockNumberOrTag::Latest;
 use reth::rpc::types::{BlockTransactionsKind, TransactionInput};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::str::FromStr;
 use telos_translator_rs::rlp::telos_rlp_decode::TelosTxDecodable;
 use tracing::info;
-use reth::primitives::BlockNumberOrTag::Latest;
 
 use reth::primitives::revm_primitives::bytes::Bytes;
 use reth::revm::primitives::{AccessList, AccessListItem};
@@ -217,17 +218,19 @@ pub async fn test_blocknum_onchain(url: &str, private_key: &str) {
     //
     // let block_num_five_back = block_num_checker.getBlockNum().call().block(BlockId::number(rpc_block_num - 5)).await.unwrap();
     // assert!(block_num_five_back._0 == U256::from(rpc_block_num - 5), "Block number 5 blocks back via historical eth_call is not correct");
-
 }
 
 // test_1559_tx tests sending eip1559 transaction that has max_priority_fee_per_gas and max_fee_per_gas set
-pub async fn test_1559_tx<T>(provider: impl Provider<T, Ethereum> + Send + Sync, sender_address: Address)
-where
+pub async fn test_1559_tx<T>(
+    provider: impl Provider<T, Ethereum> + Send + Sync,
+    sender_address: Address,
+) where
     T: Transport + Clone + Debug,
 {
     let nonce = provider.get_transaction_count(sender_address).await.unwrap();
     let chain_id = provider.get_chain_id().await.unwrap();
-    let to_address: Address = Address::from_str("0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4").unwrap();
+    let to_address: Address =
+        Address::from_str("0x23CB6AE34A13a0977F4d7101eBc24B87Bb23F0d4").unwrap();
 
     let tx = TransactionRequest::default()
         .with_to(to_address)
@@ -355,7 +358,11 @@ pub async fn test_wrong_nonce<T>(
     let tx_result = provider.send_transaction(legacy_tx_request).await;
 
     assert!(tx_result.is_err());
-
+    let err = tx_result.unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "server returned an error response: error code -32003: nonce too low: next nonce 9, tx nonce 0"
+    )
 }
 
 pub async fn test_high_nonce<T>(
@@ -382,6 +389,12 @@ pub async fn test_high_nonce<T>(
     let tx_result = provider.send_transaction(legacy_tx_request).await;
 
     assert!(tx_result.is_err());
+
+    let err = tx_result.unwrap_err();
+    assert_eq!(
+        err.to_string(),
+        "server returned an error response: error code -32003: nonce too high"
+    )
 }
 
 pub async fn test_incorrect_rlp<T>(
