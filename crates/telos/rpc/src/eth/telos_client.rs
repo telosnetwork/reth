@@ -15,10 +15,12 @@ use antelope::serializer::Decoder;
 use antelope::serializer::Encoder;
 use antelope::{chain::Packer, name, StructPacker};
 use derive_more::Display;
+use jsonrpsee_types::ErrorObject;
 use regex::Regex;
 use tracing::{debug, error};
 
 use backoff::Exponential;
+use reth_primitives::revm_primitives::bitvec::macros::internal::funty::Fundamental;
 use reth_rpc_eth_types::error::EthResult;
 use reth_rpc_eth_types::{EthApiError, RpcInvalidTransactionError};
 
@@ -36,7 +38,11 @@ impl From<TelosError> for EthApiError {
         match err.0 {
             ClientError::SERVER(server_error) => parse_server_error(server_error.error),
             ClientError::SIMPLE(client_error) => EthApiError::EvmCustom(client_error.message),
-            ClientError::HTTP(http_error) => EthApiError::EvmCustom(http_error.message),
+            ClientError::HTTP(http_error) => {
+                let http_error =
+                    ErrorObject::owned(http_error.code.as_i32(), http_error.message, None::<()>);
+                EthApiError::Other(Box::new(http_error))
+            }
             ClientError::ENCODING(encoding_error) => EthApiError::EvmCustom(encoding_error.message),
             ClientError::NETWORK(network_error) => EthApiError::EvmCustom(network_error),
             _ => EthApiError::EvmCustom(err.to_string()),
@@ -46,7 +52,9 @@ impl From<TelosError> for EthApiError {
 
 fn parse_server_error(server_error: SendTransactionResponseError) -> EthApiError {
     for message in server_error.details.iter().map(|details| &details.message) {
-        if message.contains("Calling from_big_endian with oversized array") {
+        if message.contains("Calling from_big_endian with oversized array")
+            || message.contains("Invalid packed transaction")
+        {
             return EthApiError::FailedToDecodeSignedTransaction;
         }
         if message.contains("Transaction gas price") {
