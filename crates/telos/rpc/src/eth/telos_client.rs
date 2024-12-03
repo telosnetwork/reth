@@ -17,7 +17,7 @@ use antelope::{chain::Packer, name, StructPacker};
 use derive_more::Display;
 use jsonrpsee_types::ErrorObject;
 use regex::Regex;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use backoff::Exponential;
 use reth_primitives::revm_primitives::bitvec::macros::internal::funty::Fundamental;
@@ -52,6 +52,7 @@ impl From<TelosError> for EthApiError {
 
 fn parse_server_error(server_error: SendTransactionResponseError) -> EthApiError {
     for message in server_error.details.iter().map(|details| &details.message) {
+        warn!("{message:?}");
         if message.contains("Calling from_big_endian with oversized array")
             || message.contains("Invalid packed transaction")
         {
