@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 use antelope::api::client::{APIClient, DefaultProvider};
 use antelope::api::v1::structs::{
-    ClientError, EncodingError, HTTPError, SendTransactionResponseError, SimpleError,
+    ClientError, EncodingError, HTTPError, SendTransactionResponse2Error,
+    SendTransactionResponseError, SimpleError,
 };
 use antelope::chain::action::{Action, PermissionLevel};
 use antelope::chain::checksum::Checksum160;
@@ -25,7 +26,7 @@ use reth_rpc_eth_types::error::EthResult;
 use reth_rpc_eth_types::{EthApiError, RpcInvalidTransactionError};
 
 #[derive(Debug)]
-struct TelosError(ClientError<SendTransactionResponseError>);
+struct TelosError(ClientError<SendTransactionResponse2Error>);
 
 impl fmt::Display for TelosError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -50,9 +51,10 @@ impl From<TelosError> for EthApiError {
     }
 }
 
-fn parse_server_error(server_error: SendTransactionResponseError) -> EthApiError {
-    for message in server_error.details.iter().map(|details| &details.message) {
-        warn!("{message:?}");
+fn parse_server_error(server_error: SendTransactionResponse2Error) -> EthApiError {
+    let mut error_message = server_error.message;
+    for error in server_error.stack {
+        let message = error.data.to_string();
         if message.contains("Calling from_big_endian with oversized array")
             || message.contains("Invalid packed transaction")
         {
@@ -67,7 +69,8 @@ fn parse_server_error(server_error: SendTransactionResponseError) -> EthApiError
         }
         let re = Regex::new(r"received (\d+) expected (\d+)").unwrap();
         let Some(captures) = re.captures(&message) else {
-            return EthApiError::EvmCustom(message.to_string());
+            warn!("{message:?}");
+            continue;
         };
         let received: u64 = captures.get(1).unwrap().as_str().parse().ok().unwrap();
         let expected: u64 = captures.get(2).unwrap().as_str().parse().ok().unwrap();
@@ -76,10 +79,11 @@ fn parse_server_error(server_error: SendTransactionResponseError) -> EthApiError
                 tx: received,
                 state: expected,
             });
+        } else {
+            return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooHigh);
         }
-        return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooHigh);
     }
-    EthApiError::EvmCustom(server_error.what)
+    EthApiError::EvmCustom(error_message)
 }
 
 /// A client to interact with a Telos node
@@ -224,13 +228,12 @@ impl TelosClient {
             context_free_data: vec![],
         };
 
-        let tx_response =
-            self.inner.api_client.v1_chain.send_transaction(signed_telos_transaction.clone()).await;
-        //
-        // .map_err(|error| {
-        //     warn!("{error:?}");
-        //     format!("{error:?}")
-        // });
+        let tx_response = self
+            .inner
+            .api_client
+            .v1_chain
+            .send_transaction2(signed_telos_transaction.clone(), None)
+            .await;
 
         let tx = match tx_response {
             Ok(value) => value,
