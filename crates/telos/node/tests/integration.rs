@@ -132,6 +132,7 @@ async fn build_consensus_and_translator(
         evm_start_block: 1,
         // TODO: Determine a good stop block and test it here
         evm_stop_block: None,
+	evm_deploy_block: None,
         data_path: "temp/db".to_string(),
         block_checkpoint_interval: 1000,
         maximum_sync_range: 100000,
