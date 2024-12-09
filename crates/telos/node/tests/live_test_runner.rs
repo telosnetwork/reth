@@ -236,6 +236,11 @@ pub async fn test_1559_tx<T>(
         .with_max_fee_per_gas(20_000_000_000);
 
     let tx_result = provider.send_transaction(tx).await;
+
+    info!("test_1559_tx");
+
+
+
     assert!(tx_result.is_err());
 }
 
@@ -266,6 +271,8 @@ pub async fn test_2930_tx<T>(
         }]))
         .max_fee_per_gas(2e9 as u128);
     let tx_result = provider.send_transaction(tx).await;
+    info!("test_2930_tx");
+
     assert!(tx_result.is_err());
 }
 
@@ -320,9 +327,9 @@ pub async fn test_double_approve_erc20<T>(
 
     let block_number = receipt2.unwrap().block_number.unwrap();
 
-    // make sure the block is included
+    // make sure the block is included and there is a progress
     while let Some(block) = provider.get_block_by_number(Latest, false).await.unwrap() {
-        if block.header.number == block_number {
+        if block.header.number >= block_number {
             break;
         }
     }

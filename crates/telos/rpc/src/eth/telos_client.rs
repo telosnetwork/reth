@@ -76,7 +76,7 @@ fn parse_error_message(message: String) -> Option<EthApiError> {
 }
 
 fn parse_server_error(server_error: SendTransactionResponse2Error) -> EthApiError {
-    let mut error_message = server_error.message;
+    let error_message = server_error.message;
     for detail in server_error.details.unwrap_or_default() {
         if let Some(error) = parse_error_message(detail.message) {
             return error;
@@ -232,11 +232,17 @@ impl TelosClient {
             context_free_data: vec![],
         };
 
+        let options = SendTransaction2Options{
+            return_failure_trace: true,
+            retry_trx: true,
+            retry_trx_num_blocks: 2,
+        };
+
         let tx_response = self
             .inner
             .api_client
             .v1_chain
-            .send_transaction2(signed_telos_transaction.clone(), None)
+            .send_transaction2(signed_telos_transaction.clone(), Some(options))
             .await;
 
         let tx = match tx_response {
