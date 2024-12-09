@@ -51,36 +51,45 @@ impl From<TelosError> for EthApiError {
     }
 }
 
+fn parse_error_message(message: String) -> Option<EthApiError> {
+    if message.contains("Calling from_big_endian with oversized array")
+        || message.contains("Invalid packed transaction")
+    {
+        return Some(EthApiError::FailedToDecodeSignedTransaction);
+    }
+    if message.contains("Transaction gas price") {
+        // TODO: gas to high
+        return Some(EthApiError::InvalidTransaction(RpcInvalidTransactionError::GasTooLow));
+    }
+    if !message.contains("incorrect nonce") {
+        return Some(EthApiError::EvmCustom(message.to_string()));
+    }
+    let re = Regex::new(r"received (\d+) expected (\d+)").unwrap();
+    let Some(captures) = re.captures(&message) else {
+        warn!("{message:?}");
+        return None;
+    };
+    let received: u64 = captures.get(1).unwrap().as_str().parse().ok().unwrap();
+    let expected: u64 = captures.get(2).unwrap().as_str().parse().ok().unwrap();
+    if received < expected {
+        return Some(EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooLow {
+            tx: received,
+            state: expected,
+        }));
+    }
+    Some(EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooHigh))
+}
+
 fn parse_server_error(server_error: SendTransactionResponse2Error) -> EthApiError {
     let mut error_message = server_error.message;
+    for detail in server_error.details.unwrap_or_default() {
+        if let Some(error) = parse_error_message(detail.message) {
+            return error;
+        }
+    }
     for error in server_error.stack {
-        let message = error.data.to_string();
-        if message.contains("Calling from_big_endian with oversized array")
-            || message.contains("Invalid packed transaction")
-        {
-            return EthApiError::FailedToDecodeSignedTransaction;
-        }
-        if message.contains("Transaction gas price") {
-            // TODO: gas to high
-            return EthApiError::InvalidTransaction(RpcInvalidTransactionError::GasTooLow);
-        }
-        if !message.contains("incorrect nonce") {
-            return EthApiError::EvmCustom(message.to_string());
-        }
-        let re = Regex::new(r"received (\d+) expected (\d+)").unwrap();
-        let Some(captures) = re.captures(&message) else {
-            warn!("{message:?}");
-            continue;
-        };
-        let received: u64 = captures.get(1).unwrap().as_str().parse().ok().unwrap();
-        let expected: u64 = captures.get(2).unwrap().as_str().parse().ok().unwrap();
-        if received < expected {
-            return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooLow {
-                tx: received,
-                state: expected,
-            });
-        } else {
-            return EthApiError::InvalidTransaction(RpcInvalidTransactionError::NonceTooHigh);
+        if let Some(error) = parse_error_message(error.data.to_string()) {
+            return error;
         }
     }
     EthApiError::EvmCustom(error_message)
