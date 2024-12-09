@@ -73,6 +73,11 @@ where
         state_overrides: Option<StateOverride>,
         block_overrides: Option<Box<BlockOverrides>>,
     ) -> Result<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         self.eth
             .call(request, block_id, state_overrides, block_overrides)
             .instrument(engine_span!())
@@ -81,6 +86,11 @@ where
 
     /// Handler for: `eth_getCode`
     async fn get_code(&self, address: Address, block_id: Option<BlockId>) -> Result<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         self.eth.get_code(address, block_id).instrument(engine_span!()).await
     }
 
@@ -99,6 +109,11 @@ where
         number: BlockNumberOrTag,
         full: bool,
     ) -> Result<Option<RpcBlock<Eth::NetworkTypes>>> {
+        #[cfg(feature = "telos")]
+        let number = match number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => number,
+        };
         self.eth.block_by_number(number, full).instrument(engine_span!()).await
     }
 
@@ -119,6 +134,11 @@ where
         keys: Vec<JsonStorageKey>,
         block_number: Option<BlockId>,
     ) -> Result<EIP1186AccountProofResponse> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         self.eth.get_proof(address, keys, block_number).instrument(engine_span!()).await
     }
 }

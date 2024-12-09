@@ -5,6 +5,8 @@ use async_trait::async_trait;
 use jsonrpsee::core::RpcResult;
 use reth_errors::RethResult;
 use reth_primitives::BlockId;
+#[cfg(feature = "telos")]
+use reth_primitives::BlockNumberOrTag;
 use reth_provider::{BlockReaderIdExt, ChangeSetReader, StateProviderFactory};
 use reth_rpc_api::RethApiServer;
 use reth_rpc_eth_types::{EthApiError, EthResult};
@@ -95,6 +97,11 @@ where
         &self,
         block_id: BlockId,
     ) -> RpcResult<HashMap<Address, U256>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         Ok(Self::balance_changes_in_block(self, block_id).await?)
     }
 }
