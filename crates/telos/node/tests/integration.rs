@@ -1,10 +1,6 @@
 use alloy_primitives::Address;
 use alloy_provider::{Provider, ProviderBuilder, ReqwestProvider};
 use antelope::api::client::{APIClient, DefaultProvider};
-use antelope::chain::binary_extension::BinaryExtension;
-use antelope::chain::checksum::Checksum256;
-use antelope::serializer::Decoder;
-use antelope::StructPacker;
 use reqwest::Url;
 use reth::{
     args::RpcServerArgs,
@@ -15,8 +11,6 @@ use reth_chainspec::{ChainSpec, ChainSpecBuilder, TEVMTESTNET};
 use reth_e2e_test_utils::node::NodeTestContext;
 use reth_node_telos::{TelosArgs, TelosNode};
 use reth_telos_rpc::TelosClient;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::str::FromStr;
 use std::{fs, path::PathBuf, sync::Arc, time::Duration};
 use telos_consensus_client::{

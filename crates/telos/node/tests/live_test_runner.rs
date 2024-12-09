@@ -5,23 +5,18 @@ use alloy_primitives::{hex, keccak256, Address, Signature, B256, U256};
 use alloy_provider::network::EthereumWallet;
 use alloy_provider::{Provider, ProviderBuilder};
 use alloy_rpc_types::TransactionRequest;
-use std::error::Error;
 
 use alloy_signer_local::PrivateKeySigner;
 use alloy_sol_types::private::primitives::TxKind::Create;
 use alloy_sol_types::{sol, SolEvent};
 use antelope::api::v1::structs::{GetTableRowsParams, IndexPosition, TableIndexType};
-use antelope::chain::binary_extension::BinaryExtension;
-use antelope::chain::checksum::Checksum160;
-use antelope::chain::{checksum::Checksum256, name::Name, Packer};
-use antelope::serializer::{Decoder, Encoder};
-use antelope::{name, StructPacker};
+use antelope::chain::{checksum::Checksum256, name::Name};
+use antelope::{name};
 use num_bigint::{BigUint, ToBigUint};
 use reqwest::Url;
 use reth::primitives::BlockId;
 use reth::primitives::BlockNumberOrTag::Latest;
 use reth::rpc::types::{BlockTransactionsKind, TransactionInput};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::str::FromStr;
 use telos_translator_rs::rlp::telos_rlp_decode::TelosTxDecodable;
@@ -29,7 +24,6 @@ use tracing::info;
 
 use reth::primitives::revm_primitives::bytes::Bytes;
 use reth::revm::primitives::{AccessList, AccessListItem};
-use reth::rpc::server_types::eth::{EthApiError, RpcInvalidTransactionError};
 
 pub(crate) fn account_params(account: &str) -> GetTableRowsParams {
     GetTableRowsParams {

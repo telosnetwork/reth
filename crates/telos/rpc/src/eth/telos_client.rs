@@ -3,10 +3,7 @@ use std::future::Future;
 use std::sync::Arc;
 
 use antelope::api::client::{APIClient, DefaultProvider};
-use antelope::api::v1::structs::{
-    ClientError, EncodingError, HTTPError, SendTransactionResponse2Error,
-    SendTransactionResponseError, SimpleError,
-};
+use antelope::api::v1::structs::{ClientError, SendTransaction2Options, SendTransactionResponse2Error};
 use antelope::chain::action::{Action, PermissionLevel};
 use antelope::chain::checksum::Checksum160;
 use antelope::chain::name::Name;
@@ -15,7 +12,6 @@ use antelope::chain::transaction::{SignedTransaction, Transaction};
 use antelope::serializer::Decoder;
 use antelope::serializer::Encoder;
 use antelope::{chain::Packer, name, StructPacker};
-use derive_more::Display;
 use jsonrpsee_types::ErrorObject;
 use regex::Regex;
 use tracing::{debug, error, warn};
@@ -46,7 +42,6 @@ impl From<TelosError> for EthApiError {
             }
             ClientError::ENCODING(encoding_error) => EthApiError::EvmCustom(encoding_error.message),
             ClientError::NETWORK(network_error) => EthApiError::EvmCustom(network_error),
-            _ => EthApiError::EvmCustom(err.to_string()),
         }
     }
 }
