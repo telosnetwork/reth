@@ -1,4 +1,5 @@
-use alloy_provider::{Provider, ProviderBuilder};
+use alloy_primitives::Address;
+use alloy_provider::{Provider, ProviderBuilder, ReqwestProvider};
 use antelope::api::client::{APIClient, DefaultProvider};
 use reqwest::Url;
 use reth::{
@@ -10,12 +11,14 @@ use reth_chainspec::{ChainSpec, ChainSpecBuilder, TEVMTESTNET};
 use reth_e2e_test_utils::node::NodeTestContext;
 use reth_node_telos::{TelosArgs, TelosNode};
 use reth_telos_rpc::TelosClient;
+use std::str::FromStr;
 use std::{fs, path::PathBuf, sync::Arc, time::Duration};
 use telos_consensus_client::{
     client::ConsensusClient,
     config::{AppConfig, CliArgs},
     main_utils::build_consensus_client,
 };
+use telos_translator_rs::types::evm_types::{AccountRow, EvmContractConfigRow};
 use telos_translator_rs::{
     block::TelosEVMBlock, translator::Translator, types::translator_types::ChainId,
 };
@@ -23,6 +26,7 @@ use testcontainers::{
     core::ContainerPort::Tcp, runners::AsyncRunner, ContainerAsync, GenericImage,
 };
 use tokio::sync::mpsc;
+use tracing::info;
 
 pub mod live_test_runner;
 
@@ -36,6 +40,10 @@ const CONTAINER_TAG: &str =
 
 // This is the last block in the container, after this block the node is done syncing and is running live
 const CONTAINER_LAST_EVM_BLOCK: u64 = 1010;
+
+// evmuser address from the container
+const EVM_USER_ADDRESS: &str = "0x4c641f9b61809fadeef2ec64f54ea2bcb398e4f3";
+const EVM_USER: &str = "evmuser";
 
 async fn start_ship() -> ContainerAsync<GenericImage> {
     // Change this container to a local image if using new ship data,
@@ -112,12 +120,13 @@ async fn build_consensus_and_translator(
         jwt_secret: reth_handle.jwt_secret,
         ship_endpoint: format!("ws://localhost:{ship_port}"),
         chain_endpoint: format!("http://localhost:{chain_port}"),
-        batch_size: 1,
+        batch_size: 100,
         prev_hash: "b25034033c9ca7a40e879ddcc29cf69071a22df06688b5fe8cc2d68b4e0528f9".to_string(),
         validate_hash: None,
         evm_start_block: 1,
         // TODO: Determine a good stop block and test it here
         evm_stop_block: None,
+	evm_deploy_block: None,
         data_path: "temp/db".to_string(),
         block_checkpoint_interval: 1000,
         maximum_sync_range: 100000,
@@ -201,6 +210,14 @@ async fn testing_chain_sync() {
     let rpc_url = Url::from(format!("http://localhost:{}", rpc_port).parse().unwrap());
     let provider = ProviderBuilder::new().on_http(rpc_url.clone());
 
+    info!("Client URL {:?}", format!("http://localhost:{chain_port}"));
+
+    let api_client = APIClient::<DefaultProvider>::default_provider(
+        format!("http://localhost:{chain_port}").to_string(),
+        Some(1),
+    )
+    .unwrap();
+
     loop {
         tokio::time::sleep(Duration::from_secs(1)).await;
         let latest_block = provider.get_block_number().await.unwrap();
@@ -210,6 +227,10 @@ async fn testing_chain_sync() {
             break;
         }
         if latest_block > CONTAINER_LAST_EVM_BLOCK {
+            // test account nonce after successful reth sync from the container
+            test_evm_address_nonce(provider, api_client.clone()).await;
+            // test current revision from the transactions in the container
+            test_revision(api_client).await;
             break;
         }
     }
@@ -227,4 +248,26 @@ async fn testing_chain_sync() {
 
     _ = tokio::join!(client_handle, translator_handle);
     println!("Translator shutdown done.");
+}
+
+async fn test_evm_address_nonce(provider: ReqwestProvider, api_client: APIClient<DefaultProvider>) {
+    let params = live_test_runner::account_params(EVM_USER);
+    let row: &AccountRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
+
+    let account = provider.get_account(Address::from_str(EVM_USER_ADDRESS).unwrap()).await.unwrap();
+    let tx_count =
+        provider.get_transaction_count(Address::from_str(EVM_USER_ADDRESS).unwrap()).await.unwrap();
+    // assert nonce of the account that has sent transactions in the container blocks
+    assert_eq!(account.nonce, 2);
+    assert_eq!(account.nonce, tx_count);
+    assert_eq!(account.nonce, row.nonce);
+}
+
+async fn test_revision(api_client: APIClient<DefaultProvider>) {
+    // revision in the container transaction is set to 1
+    let expected_revision = 1u32;
+    let params = live_test_runner::config_params();
+    let row: &EvmContractConfigRow = &api_client.v1_chain.get_table_rows(params).await.unwrap().rows[0];
+
+    assert_eq!(*row.revision.value().unwrap(), expected_revision);
 }

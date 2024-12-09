@@ -63,7 +63,9 @@ telos = [
 ]
 
 [dev-dependencies]
-alloy-consensus.workspace = true
+# Translator and reth versions doesn't match, causing missing implementation of a TelosTxDecodable trait
+alloy-consensus = "0.3.6"
+
 alloy-contract = "0.4.2"
 alloy-primitives.workspace = true
 alloy-provider.workspace = true
@@ -75,17 +77,16 @@ alloy-sol-types.workspace = true
 alloy-transport-http.workspace = true
 reqwest.workspace = true
 
-reth.workspace = true
-reth-chainspec.workspace = true
 reth-e2e-test-utils.workspace = true
 eyre.workspace = true
 
-telos-consensus-client = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "f8ecbe1aeea57911c9fbefdddf49efa92d8472ce" }
-telos-translator-rs = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "f8ecbe1aeea57911c9fbefdddf49efa92d8472ce" }
-#telos-consensus-client = { path = "../../../../telos-consensus-client/client" }
-#telos-translator-rs = { path = "../../../../telos-consensus-client/translator" }
+telos-consensus-client = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "9fadee1fd565e3a7ad51c1142e2673df52bd9028" }
+telos-translator-rs = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "9fadee1fd565e3a7ad51c1142e2673df52bd9028" }
+# telos-consensus-client = { path = "../../../../telos-consensus-client/client" }
+# telos-translator-rs = { path = "../../../../telos-consensus-client/translator" }
 
 env_logger = "0.11.5"
 testcontainers = "0.21.1"
 derive_more.workspace = true
+num-bigint = "0.4.5"
 

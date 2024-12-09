@@ -8,8 +8,7 @@ use reth_rpc_eth_api::{
     FromEthApiError, FullEthApiTypes,
 };
 use reth_rpc_eth_types::{utils::recover_raw_transaction, EthStateCache};
-use reth_transaction_pool::{PoolTransaction, TransactionOrigin, TransactionPool};
-
+use reth_transaction_pool::{PoolTransaction, TransactionPool};
 use crate::eth::TelosClient;
 use crate::eth::TelosEthApi;
 
@@ -37,8 +36,8 @@ where
         if let Some(client) = self.raw_tx_forwarder().as_ref() {
             tracing::debug!( target: "rpc::eth",  "forwarding raw transaction to Telos native");
             let result = client.send_to_telos(&tx).await.inspect_err(|err| {
-                    tracing::debug!(target: "rpc::eth", %err, hash=% *pool_transaction.hash(), "failed to forward raw transaction");
-                });
+                tracing::debug!(target: "rpc::eth", %err, hash=% *pool_transaction.hash(), "failed to forward raw transaction");
+            });
 
             // TODO: Retry here if it's a network error, parse errors from Telos and try to return appropriate error to client
             if let Err(err) = result {
@@ -46,13 +45,7 @@ where
             }
         }
 
-        // submit the transaction to the pool with a `Local` origin
-        let hash = self
-            .pool()
-            .add_transaction(TransactionOrigin::Local, pool_transaction)
-            .await
-            .map_err(Self::Error::from_eth_err)?;
-
+        let hash = *pool_transaction.hash();
         Ok(hash)
     }
 }
