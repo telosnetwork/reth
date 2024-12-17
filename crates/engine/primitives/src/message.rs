@@ -6,6 +6,8 @@ use alloy_rpc_types_engine::{
 use futures::{future::Either, FutureExt};
 use reth_errors::RethResult;
 use reth_payload_builder_primitives::PayloadBuilderError;
+#[cfg(feature = "telos")]
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 use std::{
     fmt::Display,
     future::Future,
@@ -148,6 +150,9 @@ pub enum BeaconEngineMessage<Engine: EngineTypes> {
         sidecar: ExecutionPayloadSidecar,
         /// The sender for returning payload status result.
         tx: oneshot::Sender<Result<PayloadStatus, BeaconOnNewPayloadError>>,
+        #[cfg(feature = "telos")]
+        /// Telos Engine API Extra Fields
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     },
     /// Message with updated forkchoice state.
     ForkchoiceUpdated {

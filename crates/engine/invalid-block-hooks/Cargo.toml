@@ -38,3 +38,6 @@ jsonrpsee.workspace = true
 pretty_assertions = "1.4"
 serde.workspace = true
 serde_json.workspace = true
+
+[features]
+telos = []

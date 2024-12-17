@@ -427,6 +427,11 @@ where
         number: BlockNumberOrTag,
         full: bool,
     ) -> RpcResult<Option<RpcBlock<T::NetworkTypes>>> {
+        #[cfg(feature = "telos")]
+        let number = match number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => number,
+        };
         trace!(target: "rpc::eth", ?number, ?full, "Serving eth_getBlockByNumber");
         Ok(EthBlocks::rpc_block(self, number.into(), full).await?)
     }
@@ -442,6 +447,11 @@ where
         &self,
         number: BlockNumberOrTag,
     ) -> RpcResult<Option<U256>> {
+        #[cfg(feature = "telos")]
+        let number = match number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => number,
+        };
         trace!(target: "rpc::eth", ?number, "Serving eth_getBlockTransactionCountByNumber");
         Ok(EthBlocks::block_transaction_count(self, number.into()).await?.map(U256::from))
     }
@@ -457,6 +467,11 @@ where
         &self,
         number: BlockNumberOrTag,
     ) -> RpcResult<Option<U256>> {
+        #[cfg(feature = "telos")]
+        let number = match number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => number,
+        };
         trace!(target: "rpc::eth", ?number, "Serving eth_getUncleCountByBlockNumber");
         Ok(EthBlocks::ommers(self, number.into())?.map(|ommers| U256::from(ommers.len())))
     }
@@ -466,6 +481,11 @@ where
         &self,
         block_id: BlockId,
     ) -> RpcResult<Option<Vec<RpcReceipt<T::NetworkTypes>>>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         trace!(target: "rpc::eth", ?block_id, "Serving eth_getBlockReceipts");
         Ok(EthBlocks::block_receipts(self, block_id).await?)
     }
@@ -486,6 +506,11 @@ where
         number: BlockNumberOrTag,
         index: Index,
     ) -> RpcResult<Option<RpcBlock<T::NetworkTypes>>> {
+        #[cfg(feature = "telos")]
+        let number = match number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => number,
+        };
         trace!(target: "rpc::eth", ?number, ?index, "Serving eth_getUncleByBlockNumberAndIndex");
         Ok(EthBlocks::ommer_by_block_and_index(self, number.into(), index).await?)
     }
@@ -536,6 +561,11 @@ where
         number: BlockNumberOrTag,
         index: Index,
     ) -> RpcResult<Option<Bytes>> {
+        #[cfg(feature = "telos")]
+        let number = match number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => number,
+        };
         trace!(target: "rpc::eth", ?number, ?index, "Serving eth_getRawTransactionByBlockNumberAndIndex");
         Ok(EthTransactions::raw_transaction_by_block_and_tx_index(
             self,
@@ -551,6 +581,11 @@ where
         number: BlockNumberOrTag,
         index: Index,
     ) -> RpcResult<Option<RpcTransaction<T::NetworkTypes>>> {
+        #[cfg(feature = "telos")]
+        let number = match number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => number,
+        };
         trace!(target: "rpc::eth", ?number, ?index, "Serving eth_getTransactionByBlockNumberAndIndex");
         Ok(EthTransactions::transaction_by_block_and_tx_index(self, number.into(), index.into())
             .await?)
@@ -578,6 +613,11 @@ where
 
     /// Handler for: `eth_getBalance`
     async fn balance(&self, address: Address, block_number: Option<BlockId>) -> RpcResult<U256> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?address, ?block_number, "Serving eth_getBalance");
         Ok(EthState::balance(self, address, block_number).await?)
     }
@@ -589,6 +629,11 @@ where
         index: JsonStorageKey,
         block_number: Option<BlockId>,
     ) -> RpcResult<B256> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?address, ?block_number, "Serving eth_getStorageAt");
         Ok(EthState::storage_at(self, address, index, block_number).await?)
     }
@@ -599,12 +644,22 @@ where
         address: Address,
         block_number: Option<BlockId>,
     ) -> RpcResult<U256> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?address, ?block_number, "Serving eth_getTransactionCount");
         Ok(EthState::transaction_count(self, address, block_number).await?)
     }
 
     /// Handler for: `eth_getCode`
     async fn get_code(&self, address: Address, block_number: Option<BlockId>) -> RpcResult<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?address, ?block_number, "Serving eth_getCode");
         Ok(EthState::get_code(self, address, block_number).await?)
     }
@@ -614,6 +669,11 @@ where
         &self,
         block_number: BlockNumberOrTag,
     ) -> RpcResult<Option<RpcHeader<T::NetworkTypes>>> {
+        #[cfg(feature = "telos")]
+        let block_number: BlockNumberOrTag = match block_number {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?block_number, "Serving eth_getHeaderByNumber");
         Ok(EthBlocks::rpc_block_header(self, block_number.into()).await?)
     }
@@ -630,6 +690,11 @@ where
         payload: SimulatePayload,
         block_number: Option<BlockId>,
     ) -> RpcResult<Vec<SimulatedBlock<RpcBlock<T::NetworkTypes>>>> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?block_number, "Serving eth_simulateV1");
         let _permit = self.tracing_task_guard().clone().acquire_owned().await;
         Ok(EthCall::simulate_v1(self, payload, block_number).await?)
@@ -643,6 +708,11 @@ where
         state_overrides: Option<StateOverride>,
         block_overrides: Option<Box<BlockOverrides>>,
     ) -> RpcResult<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?request, ?block_number, ?state_overrides, ?block_overrides, "Serving eth_call");
         Ok(EthCall::call(
             self,
@@ -670,6 +740,11 @@ where
         request: TransactionRequest,
         block_number: Option<BlockId>,
     ) -> RpcResult<AccessListResult> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?request, ?block_number, "Serving eth_createAccessList");
         Ok(EthCall::create_access_list_at(self, request, block_number).await?)
     }
@@ -681,6 +756,11 @@ where
         block_number: Option<BlockId>,
         state_override: Option<StateOverride>,
     ) -> RpcResult<U256> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?request, ?block_number, "Serving eth_estimateGas");
         Ok(EthCall::estimate_gas_at(
             self,
@@ -703,6 +783,11 @@ where
         address: Address,
         block: BlockId,
     ) -> RpcResult<Option<alloy_rpc_types_eth::Account>> {
+        #[cfg(feature = "telos")]
+        let block = match block {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block,
+        };
         trace!(target: "rpc::eth", "Serving eth_getAccount");
         Ok(EthState::get_account(self, address, block).await?)
     }
@@ -734,6 +819,11 @@ where
         newest_block: BlockNumberOrTag,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<FeeHistory> {
+        #[cfg(feature = "telos")]
+        let newest_block = match newest_block {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => newest_block,
+        };
         trace!(target: "rpc::eth", ?block_count, ?newest_block, ?reward_percentiles, "Serving eth_feeHistory");
         Ok(EthFees::fee_history(self, block_count.to(), newest_block, reward_percentiles).await?)
     }
@@ -805,6 +895,11 @@ where
         keys: Vec<JsonStorageKey>,
         block_number: Option<BlockId>,
     ) -> RpcResult<EIP1186AccountProofResponse> {
+        #[cfg(feature = "telos")]
+        let block_number = match block_number {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_number,
+        };
         trace!(target: "rpc::eth", ?address, ?keys, ?block_number, "Serving eth_getProof");
         Ok(EthState::get_proof(self, address, keys, block_number)?.await?)
     }

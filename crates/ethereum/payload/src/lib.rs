@@ -49,6 +49,8 @@ use revm::{
 };
 use std::sync::Arc;
 use tracing::{debug, trace, warn};
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosTxEnv;
 
 type BestTransactionsIter<Pool> = Box<
     dyn BestTransactions<Item = Arc<ValidPoolTransaction<<Pool as TransactionPool>::Transaction>>>,
@@ -268,7 +270,7 @@ where
         }
 
         // Configure the environment for the tx.
-        *evm.tx_mut() = evm_config.tx_env(tx.as_signed(), tx.signer());
+        *evm.tx_mut() = evm_config.tx_env(tx.as_signed(), tx.signer(), #[cfg(feature = "telos")] TelosTxEnv::default());
 
         let ResultAndState { result, state } = match evm.transact() {
             Ok(res) => res,
@@ -476,6 +478,9 @@ where
         excess_blob_gas: excess_blob_gas.map(Into::into),
         requests_hash,
         target_blobs_per_block: None,
+        #[cfg(feature = "telos")]
+        // Ok to use Default here because Telos will never build a payload in reth
+        telos_block_extension: Default::default(),
     };
 
     let withdrawals = chain_spec

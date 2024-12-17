@@ -1,16 +1,21 @@
 use alloy_consensus::BlockHeader;
 use alloy_primitives::{BlockNumber, B256};
 use reth_codecs::Compact;
+#[cfg(not(feature = "telos"))]
 use reth_consensus::ConsensusError;
 use reth_db::tables;
 use reth_db_api::transaction::{DbTx, DbTxMut};
-use reth_primitives::{GotExpected, SealedHeader};
+#[cfg(not(feature = "telos"))]
+use reth_primitives::GotExpected;
+use reth_primitives::SealedHeader;
 use reth_provider::{
     DBProvider, HeaderProvider, ProviderError, StageCheckpointReader, StageCheckpointWriter,
     StatsReader, TrieWriter,
 };
+#[cfg(not(feature = "telos"))]
+use reth_stages_api::BlockErrorKind;
 use reth_stages_api::{
-    BlockErrorKind, EntitiesCheckpoint, ExecInput, ExecOutput, MerkleCheckpoint, Stage,
+    EntitiesCheckpoint, ExecInput, ExecOutput, MerkleCheckpoint, Stage,
     StageCheckpoint, StageError, StageId, UnwindInput, UnwindOutput,
 };
 use reth_trie::{IntermediateStateRootState, StateRoot, StateRootProgress, StoredSubNode};
@@ -347,12 +352,19 @@ where
 fn validate_state_root(
     got: B256,
     expected: SealedHeader,
+    #[cfg(feature = "telos")]
+    _target_block: BlockNumber,
+    #[cfg(not(feature = "telos"))]
     target_block: BlockNumber,
 ) -> Result<(), StageError> {
     if got == expected.state_root {
         Ok(())
     } else {
+        #[cfg(feature = "telos")]
+        return Ok(());
+        #[cfg(not(feature = "telos"))]
         error!(target: "sync::stages::merkle", ?target_block, ?got, ?expected, "Failed to verify block state root! {INVALID_STATE_ROOT_ERROR_MESSAGE}");
+        #[cfg(not(feature = "telos"))]
         Err(StageError::Block {
             error: BlockErrorKind::Validation(ConsensusError::BodyStateRootDiff(
                 GotExpected { got, expected: expected.state_root }.into(),

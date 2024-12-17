@@ -78,6 +78,7 @@ tokio.workspace = true
 
 [features]
 optimism = ["reth-primitives/optimism", "reth-db/optimism"]
+telos = ["reth-chainspec/telos"]
 # Features for vergen to generate correct env vars
 jemalloc = ["reth-cli-util/jemalloc"]
 asm-keccak = ["reth-primitives/asm-keccak", "alloy-primitives/asm-keccak"]

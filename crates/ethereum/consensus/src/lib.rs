@@ -47,6 +47,7 @@ impl<ChainSpec: EthChainSpec + EthereumHardforks> EthBeaconConsensus<ChainSpec> 
         Self { chain_spec }
     }
 
+    #[cfg(not(feature = "telos"))]
     /// Checks the gas limit for consistency between parent and self headers.
     ///
     /// The maximum allowable difference between self and parent gas limits is determined by the
@@ -180,6 +181,7 @@ impl<ChainSpec: Send + Sync + EthChainSpec + EthereumHardforks + Debug> HeaderVa
 
         // TODO Check difficulty increment between parent and self
         // Ace age did increment it by some formula that we need to follow.
+        #[cfg(not(feature = "telos"))]
         self.validate_against_parent_gas_limit(header, parent)?;
 
         validate_against_parent_eip1559_base_fee(

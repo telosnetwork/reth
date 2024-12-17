@@ -161,6 +161,7 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>> Command<C> {
                 merkle_block_td + block.difficulty,
             )
                 .into(),
+            #[cfg(feature = "telos")] None,
         )?;
         let execution_outcome = ExecutionOutcome::from((block_execution_output, block.number));
 

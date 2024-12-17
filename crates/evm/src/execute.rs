@@ -8,6 +8,8 @@ pub use reth_execution_errors::{
 pub use reth_execution_types::{BlockExecutionInput, BlockExecutionOutput, ExecutionOutcome};
 use reth_primitives_traits::Block as _;
 pub use reth_storage_errors::provider::ProviderError;
+#[cfg(feature = "telos")]
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 
 use crate::{system_calls::OnStateHook, TxEnvOverrides};
 use alloc::{boxed::Box, vec::Vec};
@@ -50,7 +52,7 @@ pub trait Executor<DB> {
     ///
     /// # Returns
     /// The output of the block execution.
-    fn execute(self, input: Self::Input<'_>) -> Result<Self::Output, Self::Error>;
+    fn execute(self, input: Self::Input<'_>, #[cfg(feature = "telos")] telos_extra_fields: Option<TelosEngineAPIExtraFields>) -> Result<Self::Output, Self::Error>;
 
     /// Executes the EVM with the given input and accepts a state closure that is invoked with
     /// the EVM state after execution.
@@ -58,6 +60,8 @@ pub trait Executor<DB> {
         self,
         input: Self::Input<'_>,
         state: F,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         F: FnMut(&State<DB>);

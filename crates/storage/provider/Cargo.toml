@@ -71,6 +71,9 @@ reth-ethereum-engine-primitives = { workspace = true, optional = true }
 # parallel utils
 rayon.workspace = true
 
+# telos
+reth-telos-rpc-engine-api = { workspace = true, optional = true }
+
 [dev-dependencies]
 reth-db = { workspace = true, features = ["test-utils"] }
 reth-primitives = { workspace = true, features = ["arbitrary", "test-utils"] }
@@ -133,4 +136,8 @@ test-utils = [
     "reth-prune-types/test-utils",
     "reth-stages-types/test-utils",
     "reth-optimism-primitives?/arbitrary",
+]
+telos = [
+    "revm/telos",
+    "dep:reth-telos-rpc-engine-api",
 ]

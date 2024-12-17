@@ -1,5 +1,8 @@
 use crate::InMemorySize;
+#[cfg(not(feature = "telos"))]
 pub use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+pub use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_consensus::Sealed;
 use alloy_eips::{eip1898::BlockWithParent, BlockNumHash};
 use alloy_primitives::{keccak256, BlockHash, Sealable};

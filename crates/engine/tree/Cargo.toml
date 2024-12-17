@@ -122,3 +122,4 @@ test-utils = [
     "reth-prune-types?/test-utils",
     "reth-trie-db/test-utils",
 ]
+telos = []

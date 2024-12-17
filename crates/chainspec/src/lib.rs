@@ -39,6 +39,8 @@ pub use spec::{
     BaseFeeParams, BaseFeeParamsKind, ChainSpec, ChainSpecBuilder, ChainSpecProvider,
     DepositContract, ForkBaseFeeParams, DEV, HOLESKY, MAINNET, SEPOLIA,
 };
+#[cfg(feature = "telos")]
+pub use spec::{TEVMMAINNET, TEVMTESTNET, TEVMMAINNET_BASE, TEVMTESTNET_BASE};
 
 /// Simple utility to create a thread-safe sync cell with a value set.
 pub fn once_cell_set<T>(value: T) -> OnceLock<T> {

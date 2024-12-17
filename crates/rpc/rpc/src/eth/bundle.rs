@@ -170,6 +170,18 @@ where
         block_env.number = U256::from(block_number);
 
         let eth_api = self.eth_api().clone();
+        #[cfg(feature = "telos")]
+        let telos_block_extension;
+        #[cfg(feature = "telos")]
+        {
+            let parent_block = block_env.number.saturating_to::<u64>();
+            // here we need to fetch the _next_ block's basefee based on the parent block <https://github.com/flashbots/mev-geth/blob/fddf97beec5877483f879a77b7dea2e58a58d653/internal/ethapi/api.go#L2130>
+            let parent = LoadPendingBlock::provider(&self.inner.eth_api)
+                .header_by_number(parent_block)
+                .map_err(Eth::Error::from_eth_err)?
+                .ok_or_else(|| EthApiError::UnknownBlockOrTxIndex)?;
+            telos_block_extension = parent.telos_block_extension.to_child();
+        }
 
         self.eth_api()
             .spawn_with_state_at_block(at, move |state| {
@@ -194,6 +206,9 @@ where
                 let mut results = Vec::with_capacity(transactions.len());
                 let mut transactions = transactions.into_iter().peekable();
 
+                #[cfg(feature = "telos")]
+                let mut tx_index = 0;
+
                 while let Some((tx, signer)) = transactions.next() {
                     // Verify that the given blob data, commitments, and proofs are all valid for
                     // this transaction.
@@ -207,7 +222,7 @@ where
 
                     hasher.update(*tx.tx_hash());
                     let gas_price = tx.effective_gas_price(basefee);
-                    eth_api.evm_config().fill_tx_env(evm.tx_mut(), &tx, signer);
+                    eth_api.evm_config().fill_tx_env(evm.tx_mut(), &tx, signer, #[cfg(feature = "telos")] telos_block_extension.tx_env_at(tx_index));
                     let ResultAndState { result, state } =
                         evm.transact().map_err(Eth::Error::from_evm_err)?;
 
@@ -249,6 +264,11 @@ where
                         revert,
                     };
                     results.push(tx_res);
+
+                    #[cfg(feature = "telos")]
+                    {
+                        tx_index += 1;
+                    }
 
                     // need to apply the state changes of this call before executing the
                     // next call

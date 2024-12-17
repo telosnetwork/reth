@@ -34,6 +34,9 @@ use alloy_eips::eip1559::INITIAL_BASE_FEE;
 pub use config::{revm_spec, revm_spec_by_timestamp_after_merge};
 use reth_ethereum_forks::EthereumHardfork;
 
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosTxEnv;
+
 pub mod execute;
 
 /// Ethereum DAO hardfork state change data.
@@ -65,8 +68,8 @@ impl ConfigureEvmEnv for EthEvmConfig {
     type Transaction = TransactionSigned;
     type Error = Infallible;
 
-    fn fill_tx_env(&self, tx_env: &mut TxEnv, transaction: &TransactionSigned, sender: Address) {
-        transaction.fill_tx_env(tx_env, sender);
+    fn fill_tx_env(&self, tx_env: &mut TxEnv, transaction: &TransactionSigned, sender: Address, #[cfg(feature = "telos")] telos_tx_env: TelosTxEnv) {
+        transaction.fill_tx_env(tx_env, sender, #[cfg(feature = "telos")] telos_tx_env);
     }
 
     fn fill_tx_env_system_contract_call(

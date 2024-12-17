@@ -37,6 +37,9 @@ futures-util.workspace = true
 metrics = { workspace = true, optional = true }
 parking_lot = { workspace = true, optional = true }
 
+reth-telos-rpc-engine-api = { workspace = true, optional = true }
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [dev-dependencies]
 parking_lot.workspace = true
 reth-ethereum-forks.workspace = true
@@ -68,4 +71,9 @@ test-utils = [
     "reth-revm/test-utils",
     "revm/test-utils",
     "reth-prune-types/test-utils"
+]
+telos = [
+    "revm/telos",
+    "dep:reth-telos-rpc-engine-api",
+    "dep:reth-telos-primitives-traits",
 ]

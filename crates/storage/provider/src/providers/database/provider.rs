@@ -2526,8 +2526,14 @@ impl<TX: DbTxMut + DbTx + 'static, N: NodeTypes> HashingWriter for DatabaseProvi
     fn insert_hashes(
         &self,
         range: RangeInclusive<BlockNumber>,
+        #[cfg(not(feature = "telos"))]
         end_block_hash: B256,
+        #[cfg(feature = "telos")]
+        _end_block_hash: B256,
+        #[cfg(not(feature = "telos"))]
         expected_state_root: B256,
+        #[cfg(feature = "telos")]
+        _expected_state_root: B256,
     ) -> ProviderResult<()> {
         // Initialize prefix sets.
         let mut account_prefix_set = PrefixSetMut::default();
@@ -2579,10 +2585,17 @@ impl<TX: DbTxMut + DbTx + 'static, N: NodeTypes> HashingWriter for DatabaseProvi
                     .collect(),
                 destroyed_accounts,
             };
+            #[cfg(feature = "telos")]
+            let (_state_root, trie_updates) = StateRoot::from_tx(&self.tx)
+                .with_prefix_sets(prefix_sets)
+                .root_with_updates()
+                .map_err(Into::<reth_db::DatabaseError>::into)?;
+            #[cfg(not(feature = "telos"))]
             let (state_root, trie_updates) = StateRoot::from_tx(&self.tx)
                 .with_prefix_sets(prefix_sets)
                 .root_with_updates()
                 .map_err(Into::<reth_db::DatabaseError>::into)?;
+            #[cfg(not(feature = "telos"))]
             if state_root != expected_state_root {
                 return Err(ProviderError::StateRootMismatch(Box::new(RootMismatch {
                     root: GotExpected { got: state_root, expected: expected_state_root },

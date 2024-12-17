@@ -36,6 +36,7 @@ use reth_transaction_pool::TransactionPool;
 use std::{sync::Arc, time::Instant};
 use tokio::sync::oneshot;
 use tracing::{trace, warn};
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 
 /// The Engine API response sender.
 pub type EngineApiSender<Ok> = oneshot::Sender<EngineApiResult<Ok>>;
@@ -140,6 +141,8 @@ where
     pub async fn new_payload_v1(
         &self,
         payload: ExecutionPayloadV1,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>
     ) -> EngineApiResult<PayloadStatus> {
         let payload = ExecutionPayload::from(payload);
         let payload_or_attrs =
@@ -153,7 +156,7 @@ where
         Ok(self
             .inner
             .beacon_consensus
-            .new_payload(payload, ExecutionPayloadSidecar::none())
+            .new_payload(payload, ExecutionPayloadSidecar::none(), #[cfg(feature = "telos")] telos_extra_fields)
             .await
             .inspect(|_| self.inner.on_new_payload_response())?)
     }
@@ -188,7 +191,7 @@ where
         Ok(self
             .inner
             .beacon_consensus
-            .new_payload(payload, ExecutionPayloadSidecar::none())
+            .new_payload(payload, ExecutionPayloadSidecar::none(), #[cfg(feature = "telos")] None)
             .await
             .inspect(|_| self.inner.on_new_payload_response())?)
     }
@@ -753,7 +756,7 @@ where
     /// Handler for `engine_newPayloadV1`
     /// See also <https://github.com/ethereum/execution-apis/blob/3d627c95a4d3510a8187dd02e0250ecb4331d27e/src/engine/paris.md#engine_newpayloadv1>
     /// Caution: This should not accept the `withdrawals` field
-    async fn new_payload_v1(&self, payload: ExecutionPayloadV1) -> RpcResult<PayloadStatus> {
+    async fn new_payload_v1(&self, payload: ExecutionPayloadV1, #[cfg(feature = "telos")] telos_extra_fields: Option<TelosEngineAPIExtraFields>, #[cfg(not(feature = "telos"))] _telos_extra_fields: Option<TelosEngineAPIExtraFields>) -> RpcResult<PayloadStatus> {
         trace!(target: "rpc::engine", "Serving engine_newPayloadV1");
         Ok(self.new_payload_v1_metered(payload).await?)
     }

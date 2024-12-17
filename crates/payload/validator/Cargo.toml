@@ -19,3 +19,6 @@ reth-rpc-types-compat.workspace = true
 
 # alloy
 alloy-rpc-types = { workspace = true, features = ["engine"] }
+
+[features]
+telos = []

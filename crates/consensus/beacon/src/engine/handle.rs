@@ -10,6 +10,8 @@ use reth_engine_primitives::{
     OnForkChoiceUpdated,
 };
 use reth_errors::RethResult;
+#[cfg(feature = "telos")]
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 use reth_tokio_util::{EventSender, EventStream};
 use tokio::sync::{mpsc::UnboundedSender, oneshot};
 
@@ -47,9 +49,11 @@ where
         &self,
         payload: ExecutionPayload,
         sidecar: ExecutionPayloadSidecar,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<PayloadStatus, BeaconOnNewPayloadError> {
         let (tx, rx) = oneshot::channel();
-        let _ = self.to_engine.send(BeaconEngineMessage::NewPayload { payload, sidecar, tx });
+        let _ = self.to_engine.send(BeaconEngineMessage::NewPayload { payload, sidecar, tx, #[cfg(feature = "telos")] telos_extra_fields });
         rx.await.map_err(|_| BeaconOnNewPayloadError::EngineUnavailable)?
     }
 

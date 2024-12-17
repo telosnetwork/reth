@@ -12,6 +12,8 @@ use reth_provider::{
     CanonStateSubscriptions, FullExecutionDataProvider, NodePrimitivesProvider,
 };
 use reth_storage_errors::provider::ProviderResult;
+#[cfg(feature = "telos")]
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 use std::collections::BTreeMap;
 
 /// A `BlockchainTree` that does nothing.
@@ -42,6 +44,8 @@ impl BlockchainTreeEngine for NoopBlockchainTree {
         &self,
         block: SealedBlockWithSenders,
         _validation_kind: BlockValidationKind,
+        #[cfg(feature = "telos")]
+        _telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<InsertPayloadOk, InsertBlockError> {
         Err(InsertBlockError::tree_error(
             BlockchainTreeError::BlockHashNotFoundInChain { block_hash: block.hash() },

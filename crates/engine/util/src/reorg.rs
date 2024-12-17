@@ -38,6 +38,8 @@ use std::{
 };
 use tokio::sync::oneshot;
 use tracing::*;
+use reth_telos_primitives_traits::TelosBlockExtension;
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 
 #[derive(Debug)]
 enum EngineReorgState<Engine: EngineTypes> {
@@ -151,7 +153,7 @@ where
             let next = ready!(this.stream.poll_next_unpin(cx));
             let item = match (next, &this.last_forkchoice_state) {
                 (
-                    Some(BeaconEngineMessage::NewPayload { payload, sidecar, tx }),
+                    Some(BeaconEngineMessage::NewPayload { payload, sidecar, tx, #[cfg(feature = "telos")] telos_extra_fields }),
                     Some(last_forkchoice_state),
                 ) if this.forkchoice_states_forwarded > this.frequency &&
                         // Only enter reorg state if new payload attaches to current head.
@@ -173,6 +175,8 @@ where
                         *this.depth,
                         payload.clone(),
                         sidecar.clone(),
+                        #[cfg(feature = "telos")]
+                        telos_extra_fields.clone(),
                     ) {
                         Ok(result) => result,
                         Err(error) => {
@@ -183,6 +187,7 @@ where
                                 payload,
                                 sidecar,
                                 tx,
+                                #[cfg(feature = "telos")] telos_extra_fields,
                             }))
                         }
                     };
@@ -201,12 +206,14 @@ where
 
                     let queue = VecDeque::from([
                         // Current payload
-                        BeaconEngineMessage::NewPayload { payload, sidecar, tx },
+                        BeaconEngineMessage::NewPayload { payload, sidecar, tx, #[cfg(feature = "telos")] telos_extra_fields },
                         // Reorg payload
                         BeaconEngineMessage::NewPayload {
                             payload: reorg_payload,
                             sidecar: reorg_sidecar,
                             tx: reorg_payload_tx,
+                            #[cfg(feature = "telos")]
+                            telos_extra_fields: None,
                         },
                         // Reorg forkchoice state
                         BeaconEngineMessage::ForkchoiceUpdated {
@@ -254,6 +261,8 @@ fn create_reorg_head<Provider, Evm, Spec>(
     mut depth: usize,
     next_payload: ExecutionPayload,
     next_sidecar: ExecutionPayloadSidecar,
+    #[cfg(feature = "telos")]
+    telos_extra_fields: Option<TelosEngineAPIExtraFields>,
 ) -> RethResult<(ExecutionPayload, ExecutionPayloadSidecar)>
 where
     Provider: BlockReader<Block = reth_primitives::Block> + StateProviderFactory,
@@ -312,6 +321,8 @@ where
         &mut evm,
     )?;
 
+    #[cfg(feature = "telos")]
+    let mut tx_index = 0;
     let mut cumulative_gas_used = 0;
     let mut sum_blob_gas_used = 0;
     let mut transactions = Vec::new();
@@ -327,7 +338,7 @@ where
         let tx_recovered = tx.clone().try_into_ecrecovered().map_err(|_| {
             BlockExecutionError::Validation(BlockValidationError::SenderRecoveryError)
         })?;
-        evm_config.fill_tx_env(evm.tx_mut(), &tx_recovered, tx_recovered.signer());
+        evm_config.fill_tx_env(evm.tx_mut(), &tx_recovered, tx_recovered.signer(), #[cfg(feature = "telos")] reorg_target.header.telos_block_extension.tx_env_at(tx_index));
         let exec_result = match evm.transact() {
             Ok(result) => result,
             error @ Err(EVMError::Transaction(_) | EVMError::Header(_)) => {
@@ -360,6 +371,11 @@ where
 
         // append transaction to the list of executed transactions
         transactions.push(tx);
+
+        #[cfg(feature = "telos")]
+        {
+            tx_index += 1;
+        }
     }
     drop(evm);
 
@@ -423,6 +439,12 @@ where
             state_root: state_provider.state_root(hashed_state)?,
             requests_hash: None,          // TODO(prague)
             target_blobs_per_block: None, // TODO(prague)
+            #[cfg(feature = "telos")]
+            telos_block_extension: TelosBlockExtension::from_parent_and_changes(
+                &reorg_target_parent.header.telos_block_extension,
+                telos_extra_fields.clone().unwrap_or_default().gasprice_changes,
+                telos_extra_fields.clone().unwrap_or_default().revision_changes,
+            ),
         },
         body: BlockBody {
             transactions,

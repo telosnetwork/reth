@@ -1,0 +1,43 @@
+[package]
+name = "reth-telos-rpc"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+exclude.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+alloy-primitives.workspace = true
+alloy-network.workspace = true
+alloy-rpc-types.workspace = true
+parking_lot = "0.12.3"
+jsonrpsee-types.workspace = true
+reth-chainspec.workspace = true
+reth-evm = { workspace = true, features = ["telos"] }
+reth-network-api.workspace = true
+reth-node-api.workspace = true
+reth-node-builder.workspace = true
+reth-primitives.workspace = true
+reth-provider.workspace = true
+reth-rpc.workspace = true
+reth-rpc-server-types.workspace = true
+reth-tasks.workspace = true
+reth-transaction-pool.workspace = true
+
+reth-rpc-eth-api.workspace = true
+reth-rpc-eth-types.workspace = true
+
+thiserror = "1.0.63"
+tracing.workspace = true
+
+antelope-client.workspace = true
+log = "0.4.22"
+tokio = "1.39.3"
+
+derive_more.workspace = true
+
+[lints]
+workspace = true

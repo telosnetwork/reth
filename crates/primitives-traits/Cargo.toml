@@ -42,6 +42,9 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 proptest = { workspace = true, optional = true }
 proptest-arbitrary-interop = { workspace = true, optional = true }
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true, features = ["serde"] }
+
 [dev-dependencies]
 alloy-primitives = { workspace = true, features = ["arbitrary"] }
 alloy-consensus = { workspace = true, features = ["arbitrary"] }
@@ -111,4 +114,7 @@ reth-codec = [
 ]
 op = [
 	"dep:op-alloy-consensus",
+]
+telos = [
+    "dep:reth-telos-primitives-traits",
 ]

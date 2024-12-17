@@ -91,6 +91,9 @@ where
         // Apply pre-block system contract calls.
         system_caller.apply_pre_execution_changes(&block.clone().unseal().block, &mut evm)?;
 
+        #[cfg(feature = "telos")]
+        let mut tx_index = 0;
+
         // Re-execute all of the transactions in the block to load all touched accounts into
         // the cache DB.
         for tx in block.transactions() {
@@ -98,9 +101,15 @@ where
                 evm.tx_mut(),
                 tx,
                 tx.recover_signer().ok_or_eyre("failed to recover sender")?,
+                #[cfg(feature = "telos")]
+                parent_header.telos_block_extension.tx_env_at(tx_index),
             );
             let result = evm.transact()?;
             evm.db_mut().commit(result.state);
+            #[cfg(feature = "telos")]
+            {
+                tx_index += 1;
+            }
         }
 
         drop(evm);

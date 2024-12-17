@@ -115,3 +115,12 @@ test-utils = [
     "reth-provider/test-utils",
     "reth-transaction-pool/test-utils",
 ]
+telos = [
+    "reth-blockchain-tree/telos",
+    "reth-engine-tree/telos",
+    "reth-engine-util/telos",
+    "reth-exex/telos",
+    "reth-invalid-block-hooks/telos",
+    "reth-payload-validator/telos",
+    "reth-rpc-engine-api/telos",
+]

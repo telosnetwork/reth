@@ -137,6 +137,7 @@ test-utils = [
 	"reth-primitives-traits/test-utils",
 	"reth-provider/test-utils"
 ]
+telos = ["reth-network-peers/telos"]
 
 [[bench]]
 name = "broadcast"

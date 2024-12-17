@@ -75,6 +75,9 @@ test-utils = [
 	"reth-trie-common/test-utils",
 	"reth-stages-types/test-utils"
 ]
+telos = [
+    "revm/telos",
+]
 
 [[bench]]
 name = "hash_post_state"

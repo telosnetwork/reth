@@ -1,0 +1,58 @@
+[package]
+name = "reth-telos-primitives-traits"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+exclude.workspace = true
+
+[dependencies]
+arbitrary = { workspace = true, optional = true }
+alloy-consensus = { workspace = true }
+alloy-primitives = { version = "0.8.5", features = ["rlp"], default-features = false }
+alloy-eips = { version = "0.4", features = ["kzg-sidecar"], default-features = false }
+alloy-rlp = { version = "0.3", default-features = false }
+alloy-rpc-types = { version = "0.4", default-features = false }
+alloy-serde = { version = "0.4", optional = true, default-features = false }
+serde = { version = "1.0", features = ["derive", "alloc"], default-features = false }
+serde_with = { version = "3.3.0", optional = true }
+bytes.workspace = true
+c-kzg = { version = "1.0", features = ["serde"], optional = true, default-features = false }
+modular-bitfield.workspace = true
+reth-codecs = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+arbitrary = [
+    "std",
+    "dep:arbitrary",
+    "alloy-eips/arbitrary",
+]
+default = ["std"]
+k256 = [
+    "alloy-primitives/k256",
+    "alloy-eips/k256",
+]
+kzg = [
+    "dep:c-kzg",
+    "alloy-eips/kzg",
+    "std",
+]
+serde = [
+    "alloy-primitives/serde",
+    "dep:alloy-serde",
+    "alloy-eips/serde",
+]
+serde-bincode-compat = [
+    "alloy-eips/serde-bincode-compat",
+    "serde_with",
+    "serde"
+]
+std = [
+    "alloy-eips/std",
+    "c-kzg?/std",
+]

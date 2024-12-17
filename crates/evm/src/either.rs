@@ -10,6 +10,8 @@ use alloc::boxed::Box;
 use alloy_primitives::BlockNumber;
 use reth_prune_types::PruneModes;
 use reth_storage_errors::provider::ProviderError;
+#[cfg(feature = "telos")]
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 use revm_primitives::db::Database;
 
 // re-export Either
@@ -67,10 +69,10 @@ where
         }
     }
 
-    fn execute(self, input: Self::Input<'_>) -> Result<Self::Output, Self::Error> {
+    fn execute(self, input: Self::Input<'_>, #[cfg(feature = "telos")] telos_extra_fields: Option<TelosEngineAPIExtraFields>) -> Result<Self::Output, Self::Error> {
         match self {
-            Self::Left(a) => a.execute(input),
-            Self::Right(b) => b.execute(input),
+            Self::Left(a) => a.execute(input, #[cfg(feature = "telos")] telos_extra_fields),
+            Self::Right(b) => b.execute(input, #[cfg(feature = "telos")] telos_extra_fields),
         }
     }
 
@@ -78,13 +80,15 @@ where
         self,
         input: Self::Input<'_>,
         witness: F,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         F: FnMut(&State<DB>),
     {
         match self {
-            Self::Left(a) => a.execute_with_state_closure(input, witness),
-            Self::Right(b) => b.execute_with_state_closure(input, witness),
+            Self::Left(a) => a.execute_with_state_closure(input, witness, #[cfg(feature = "telos")] telos_extra_fields),
+            Self::Right(b) => b.execute_with_state_closure(input, witness, #[cfg(feature = "telos")] telos_extra_fields),
         }
     }
 
@@ -97,8 +101,8 @@ where
         F: OnStateHook + 'static,
     {
         match self {
-            Self::Left(a) => a.execute_with_state_hook(input, state_hook),
-            Self::Right(b) => b.execute_with_state_hook(input, state_hook),
+            Self::Left(a) => a.execute_with_state_hook(input, state_hook, #[cfg(feature = "telos")] telos_extra_fields),
+            Self::Right(b) => b.execute_with_state_hook(input, state_hook, #[cfg(feature = "telos")] telos_extra_fields),
         }
     }
 }

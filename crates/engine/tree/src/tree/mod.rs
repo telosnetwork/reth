@@ -1272,7 +1272,7 @@ where
                                     error!(target: "engine::tree", "Failed to send event: {err:?}");
                                 }
                             }
-                            BeaconEngineMessage::NewPayload { payload, sidecar, tx } => {
+                            BeaconEngineMessage::NewPayload { payload, sidecar, tx, #[cfg(feature = "telos")] telos_extra_fields: _ } => {
                                 let output = self.on_new_payload(payload, sidecar);
                                 if let Err(err) =
                                     tx.send(output.map(|o| o.outcome).map_err(|e| {

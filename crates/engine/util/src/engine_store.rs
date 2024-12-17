@@ -4,6 +4,8 @@ use alloy_rpc_types_engine::{ExecutionPayload, ExecutionPayloadSidecar, Forkchoi
 use futures::{Stream, StreamExt};
 use reth_engine_primitives::{BeaconEngineMessage, EngineTypes};
 use reth_fs_util as fs;
+#[cfg(feature = "telos")]
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -32,6 +34,9 @@ pub enum StoredEngineApiMessage<Attributes> {
         /// The execution payload sidecar with additional version-specific fields received by
         /// engine API.
         sidecar: ExecutionPayloadSidecar,
+        #[cfg(feature = "telos")]
+        /// Telos Engine APi Extra Fields
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     },
 }
 
@@ -78,7 +83,7 @@ impl EngineMessageStore {
                     })?,
                 )?;
             }
-            BeaconEngineMessage::NewPayload { payload, sidecar, tx: _tx } => {
+            BeaconEngineMessage::NewPayload { payload, sidecar, tx: _tx, #[cfg(feature = "telos")] telos_extra_fields } => {
                 let filename = format!("{}-new_payload-{}.json", timestamp, payload.block_hash());
                 fs::write(
                     self.path.join(filename),
@@ -86,6 +91,8 @@ impl EngineMessageStore {
                         &StoredEngineApiMessage::<Engine::PayloadAttributes>::NewPayload {
                             payload: payload.clone(),
                             sidecar: sidecar.clone(),
+                            #[cfg(feature = "telos")]
+                            telos_extra_fields: telos_extra_fields.clone(),
                         },
                     )?,
                 )?;

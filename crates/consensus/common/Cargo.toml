@@ -29,3 +29,5 @@ reth-storage-api.workspace = true
 rand.workspace = true
 mockall = "0.13"
 
+[features]
+telos = []

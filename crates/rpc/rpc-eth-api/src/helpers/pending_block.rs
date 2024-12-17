@@ -343,7 +343,7 @@ pub trait LoadPendingBlock:
             let env = Env::boxed(
                 cfg.cfg_env.clone(),
                 block_env.clone(),
-                Self::evm_config(self).tx_env(tx.as_signed(), tx.signer()),
+                Self::evm_config(self).tx_env(tx.as_signed(), tx.signer(), #[cfg(feature = "telos")] TelosTxEnv::default()),
             );
 
             let mut evm = revm::Evm::builder().with_env(env).with_db(&mut db).build();
@@ -426,6 +426,9 @@ pub trait LoadPendingBlock:
             state_root,
             executed_txs,
             results,
+            #[cfg(feature = "telos")]
+            // Ok to use Default here, as Telos will never build a block in reth
+            telos_block_extension: Default::default(),
         );
 
         Ok((SealedBlockWithSenders { block: block.seal_slow(), senders }, receipts))

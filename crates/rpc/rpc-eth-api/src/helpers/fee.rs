@@ -322,7 +322,10 @@ pub trait LoadFee: LoadBlock {
         let suggested_tip = self.suggested_priority_fee();
         async move {
             let (header, suggested_tip) = futures::try_join!(header, suggested_tip)?;
+            #[cfg(not(feature = "telos"))]
             let base_fee = header.and_then(|h| h.base_fee_per_gas()).unwrap_or_default();
+            #[cfg(feature = "telos")]
+            let base_fee = header.and_then(|h| Some(h.telos_block_extension.get_last_gas_price())).unwrap_or_default();
             Ok(suggested_tip + U256::from(base_fee))
         }
     }

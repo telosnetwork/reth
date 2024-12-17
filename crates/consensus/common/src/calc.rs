@@ -27,6 +27,10 @@ pub fn base_block_reward(
     block_difficulty: U256,
     total_difficulty: U256,
 ) -> Option<u128> {
+    #[cfg(feature = "telos")]
+    if chain_spec.fork(EthereumHardfork::Berlin).active_at_block(block_number) {
+        return None;
+    }
     if chain_spec.fork(EthereumHardfork::Paris).active_at_ttd(total_difficulty, block_difficulty) {
         None
     } else {

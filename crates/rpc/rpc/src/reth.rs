@@ -95,6 +95,11 @@ where
         &self,
         block_id: BlockId,
     ) -> RpcResult<HashMap<Address, U256>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         Ok(Self::balance_changes_in_block(self, block_id).await?)
     }
 }

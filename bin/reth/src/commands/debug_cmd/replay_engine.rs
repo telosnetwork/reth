@@ -183,8 +183,8 @@ impl<C: ChainSpecParser<ChainSpec = ChainSpec>> Command<C> {
                         .await?;
                     debug!(target: "reth::cli", ?response, "Received for forkchoice updated");
                 }
-                StoredEngineApiMessage::NewPayload { payload, sidecar } => {
-                    let response = beacon_engine_handle.new_payload(payload, sidecar).await?;
+                StoredEngineApiMessage::NewPayload { payload, sidecar, #[cfg(feature = "telos")] telos_extra_fields } => {
+                    let response = beacon_engine_handle.new_payload(payload, sidecar, #[cfg(feature = "telos")] telos_extra_fields).await?;
                     debug!(target: "reth::cli", ?response, "Received for new payload");
                 }
             };

@@ -60,6 +60,8 @@ serde_with = { workspace = true, optional = true }
 # arbitrary utils
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [dev-dependencies]
 # eth
 reth-chainspec = { workspace = true, features = ["arbitrary"] }
@@ -170,6 +172,13 @@ serde-bincode-compat = [
 	"op-alloy-consensus?/serde-bincode-compat",
 	"reth-primitives-traits/serde-bincode-compat",
 	"reth-trie-common/serde-bincode-compat",
+]
+telos = [
+    "reth-chainspec/telos",
+    "reth-codecs/telos",
+    "dep:reth-telos-primitives-traits",
+    "reth-primitives-traits/telos",
+    "revm-primitives/telos",
 ]
 
 [[bench]]

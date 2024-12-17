@@ -39,6 +39,7 @@ alloy-genesis.workspace = true
 
 [features]
 default = ["std"]
+telos = []
 std = [
 	"alloy-chains/std",
 	"alloy-eips/std",

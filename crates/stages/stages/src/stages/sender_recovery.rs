@@ -315,7 +315,7 @@ fn recover_sender<T: SignedTransaction>(
     // pre-homestead which have large `s` values, so using [Signature::recover_signer] here
     // would not be backwards-compatible.
     let sender = tx
-        .recover_signer_unchecked_with_buf(rlp_buf)
+        .recover_signer_unchecked_with_buf(rlp_buf, #[cfg(feature = "telos")] tx.chain_id())
         .ok_or(SenderRecoveryStageError::FailedRecovery(FailedSenderRecoveryError { tx: tx_id }))?;
 
     Ok((tx_id, sender))

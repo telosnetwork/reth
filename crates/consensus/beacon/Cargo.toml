@@ -55,6 +55,9 @@ thiserror.workspace = true
 schnellru.workspace = true
 itertools.workspace = true
 
+# telos
+reth-telos-rpc-engine-api = { workspace = true, optional = true }
+
 [dev-dependencies]
 # reth
 reth-payload-builder = { workspace = true, features = ["test-utils"] }
@@ -91,4 +94,7 @@ optimism = [
     "reth-primitives/optimism",
     "reth-provider/optimism",
     "reth-downloaders/optimism",
+]
+telos = [
+    "dep:reth-telos-rpc-engine-api",
 ]

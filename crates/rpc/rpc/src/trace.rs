@@ -119,10 +119,18 @@ where
 
         let (cfg, block, at) = self.eth_api().evm_env_at(block_id.unwrap_or_default()).await?;
 
+        #[cfg(feature = "telos")]
+        let telox_tx_env = self.provider()
+                            .block(BlockHashOrNumber::Hash(block_id.unwrap_or_default().as_block_hash().unwrap()))
+                            .unwrap().unwrap() // TODO: Fix this
+                            .header
+                            .telos_block_extension
+                            .tx_env_at(0);
+
         let env = EnvWithHandlerCfg::new_with_cfg_env(
             cfg,
             block,
-            self.eth_api().evm_config().tx_env(tx.as_signed(), tx.signer()),
+            self.eth_api().evm_config().tx_env(tx.as_signed(), tx.signer(), #[cfg(feature = "telos")] telox_tx_env),
         );
 
         let config = TracingInspectorConfig::from_parity_config(&trace_types);
@@ -149,6 +157,14 @@ where
         let at = block_id.unwrap_or(BlockId::pending());
         let (cfg, block_env, at) = self.eth_api().evm_env_at(at).await?;
 
+        #[cfg(feature = "telos")]
+        let telos_tx_env = self.provider()
+                            .block(BlockHashOrNumber::Hash(at.as_block_hash().unwrap()))
+                            .unwrap().unwrap() // TODO: Fix this
+                            .header
+                            .telos_block_extension
+                            .tx_env_at(0);
+
         let this = self.clone();
         // execute all transactions on top of each other and record the traces
         self.eth_api()
@@ -165,6 +181,8 @@ where
                         call,
                         &mut db,
                         Default::default(),
+                        #[cfg(feature = "telos")]
+                        telos_tx_env.clone(),
                     )?;
                     let config = TracingInspectorConfig::from_parity_config(&trace_types);
                     let mut inspector = TracingInspector::new(config);
@@ -588,6 +606,11 @@ where
         state_overrides: Option<StateOverride>,
         block_overrides: Option<Box<BlockOverrides>>,
     ) -> RpcResult<TraceResults> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         let request =
             TraceCallRequest { call, trace_types, block_id, state_overrides, block_overrides };
@@ -600,6 +623,11 @@ where
         calls: Vec<(TransactionRequest, HashSet<TraceType>)>,
         block_id: Option<BlockId>,
     ) -> RpcResult<Vec<TraceResults>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         Ok(Self::trace_call_many(self, calls, block_id).await.map_err(Into::into)?)
     }
@@ -611,6 +639,11 @@ where
         trace_types: HashSet<TraceType>,
         block_id: Option<BlockId>,
     ) -> RpcResult<TraceResults> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         Ok(Self::trace_raw_transaction(self, data, trace_types, block_id)
             .await
@@ -623,6 +656,11 @@ where
         block_id: BlockId,
         trace_types: HashSet<TraceType>,
     ) -> RpcResult<Option<Vec<TraceResultsWithTransactionHash>>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         Ok(Self::replay_block_transactions(self, block_id, trace_types)
             .await
@@ -644,6 +682,11 @@ where
         &self,
         block_id: BlockId,
     ) -> RpcResult<Option<Vec<LocalizedTransactionTrace>>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         Ok(Self::trace_block(self, block_id).await.map_err(Into::into)?)
     }
@@ -691,6 +734,11 @@ where
 
     /// Handler for `trace_blockOpcodeGas`
     async fn trace_block_opcode_gas(&self, block_id: BlockId) -> RpcResult<Option<BlockOpcodeGas>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         Ok(Self::trace_block_opcode_gas(self, block_id).await.map_err(Into::into)?)
     }

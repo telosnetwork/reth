@@ -46,6 +46,11 @@ use tracing::trace;
 /// Result type for `eth_simulateV1` RPC method.
 pub type SimulatedBlocksResult<N, E> = Result<Vec<SimulatedBlock<RpcBlock<N>>>, E>;
 
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::{TelosBlockExtension, TelosTxEnv};
+#[cfg(feature = "telos")]
+use reth_provider::BlockIdReader;
+
 /// Execution related functions for the [`EthApiServer`](crate::EthApiServer) trait in
 /// the `eth_` namespace.
 pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthApiTypes {
@@ -95,6 +100,8 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
             let base_block =
                 self.block_with_senders(block).await?.ok_or(EthApiError::HeaderNotFound(block))?;
             let mut parent_hash = base_block.header.hash();
+            #[cfg(feature = "telos")]
+            let telos_tx_env = base_block.telos_block_extension.tx_env_at(0);
             let total_difficulty = RpcNodeCore::provider(self)
                 .header_td_by_number(block_env.number.to())
                 .map_err(Self::Error::from_eth_err)?
@@ -169,7 +176,7 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
                     let mut results = Vec::with_capacity(calls.len());
 
                     while let Some(tx) = calls.next() {
-                        let env = this.build_call_evm_env(cfg.clone(), block_env.clone(), tx)?;
+                        let env = this.build_call_evm_env(cfg.clone(), block_env.clone(), tx, #[cfg(feature = "telos")] telos_tx_env.clone())?;
 
                         let (res, env) = {
                             if trace_transfers {
@@ -301,6 +308,11 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
                 let mut results = Vec::with_capacity(transactions.len());
                 let mut db = CacheDB::new(StateProviderDatabase::new(state));
 
+                #[cfg(feature = "telos")]
+                let telos_extension = block.header.telos_block_extension.clone();
+                #[cfg(feature = "telos")]
+                let mut tx_index = 0;
+
                 if replay_block_txs {
                     // only need to replay the transactions in the block if not all transactions are
                     // to be replayed
@@ -309,10 +321,13 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
                         let env = EnvWithHandlerCfg::new_with_cfg_env(
                             cfg.clone(),
                             block_env.clone(),
-                            RpcNodeCore::evm_config(&this).tx_env(tx, *signer),
+                            RpcNodeCore::evm_config(&this).tx_env(tx, *signer, #[cfg(feature = "telos")] telos_extension.tx_env_at(tx_index)),
                         );
                         let (res, _) = this.transact(&mut db, env)?;
                         db.commit(res.state);
+                        #[cfg(feature = "telos")] {
+                            tx_index += 1;
+                        }
                     }
                 }
 
@@ -325,7 +340,7 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
                     let overrides = EvmOverrides::new(state_overrides, block_overrides.clone());
 
                     let env = this
-                        .prepare_call_env(cfg.clone(), block_env.clone(), tx, &mut db, overrides)
+                        .prepare_call_env(cfg.clone(), block_env.clone(), tx, &mut db, overrides, #[cfg(feature = "telos")] telos_extension.tx_env_at(tx_index))
                         .map(Into::into)?;
                     let (res, _) = this.transact(&mut db, env)?;
 
@@ -345,6 +360,9 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
                         // need to apply the state changes of this call before executing the next
                         // call
                         db.commit(res.state);
+                    }
+                    #[cfg(feature = "telos")] {
+                        tx_index += 1;
                     }
                 }
 
@@ -368,8 +386,11 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
             let block_id = block_number.unwrap_or_default();
             let (cfg, block, at) = self.evm_env_at(block_id).await?;
 
+            #[cfg(feature = "telos")]
+            let telos_tx_env = self.telos_tx_env_at(at).await?;
+
             self.spawn_blocking_io(move |this| {
-                this.create_access_list_with(cfg, block, at, request)
+                this.create_access_list_with(cfg, block, at, request, #[cfg(feature = "telos")] telos_tx_env)
             })
             .await
         }
@@ -383,13 +404,15 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
         block: BlockEnv,
         at: BlockId,
         mut request: TransactionRequest,
+        #[cfg(feature = "telos")]
+        telos_tx_env: TelosTxEnv,
     ) -> Result<AccessListResult, Self::Error>
     where
         Self: Trace,
     {
         let state = self.state_at_block_id(at)?;
 
-        let mut env = self.build_call_evm_env(cfg, block, request.clone())?;
+        let mut env = self.build_call_evm_env(cfg, block, request.clone(), #[cfg(feature = "telos")] telos_tx_env)?;
 
         // we want to disable this in eth_createAccessList, since this is common practice used by
         // other node impls and providers <https://github.com/foundry-rs/foundry/issues/4388>
@@ -516,6 +539,30 @@ pub trait Call:
         Ok((res, env))
     }
 
+    #[cfg(feature = "telos")]
+    /// Fetch a TelosTxEnv for a given block
+    fn telos_tx_env_at(&self, at: BlockId) ->  impl Future<Output = Result<TelosTxEnv, Self::Error>> + Send
+    where
+        Self: LoadPendingBlock,
+    {
+        async move {
+            let block_hash = LoadPendingBlock::provider(self)
+                .block_hash_for_id(at)
+                .map_err(Self::Error::from_eth_err)?
+                .ok_or_else(|| EthApiError::UnknownBlockOrTxIndex)?;
+            let block_at_result = self.cache().get_block(block_hash).await.map_err(Self::Error::from_eth_err)?;
+            let block_at = block_at_result.ok_or_else(|| {
+                EthApiError::UnknownBlockOrTxIndex
+            })?;
+            let parent_block_result = self.cache().get_block(block_at.parent_hash).await;
+            let parent_block = parent_block_result.unwrap_or(None).ok_or_else(
+                || EthApiError::UnknownBlockOrTxIndex,
+            )?;
+
+            Ok(parent_block.header.telos_block_extension.tx_env_at(block_at.body.transactions.len() as u64))
+        }
+    }
+
     /// Executes the call request at the given [`BlockId`].
     fn transact_call_at(
         &self,
@@ -577,13 +624,17 @@ pub trait Call:
     {
         async move {
             let (cfg, block_env, at) = self.evm_env_at(at).await?;
+
+            #[cfg(feature = "telos")]
+            let telos_tx_env = self.telos_tx_env_at(at).await?;
+
             let this = self.clone();
             self.spawn_blocking_io(move |_| {
                 let state = this.state_at_block_id(at)?;
                 let mut db =
                     CacheDB::new(StateProviderDatabase::new(StateProviderTraitObjWrapper(&state)));
 
-                let env = this.prepare_call_env(cfg, block_env, request, &mut db, overrides)?;
+                let env = this.prepare_call_env(cfg, block_env, request, &mut db, overrides, #[cfg(feature = "telos")] telos_tx_env)?;
 
                 f(StateCacheDbRefMutWrapper(&mut db), env)
             })
@@ -624,12 +675,15 @@ pub trait Call:
             // we need to get the state of the parent block because we're essentially replaying the
             // block the transaction is included in
             let parent_block = block.parent_hash();
+            #[cfg(feature = "telos")]
+            let telos_block_extension = block.header.telos_block_extension.clone();
 
             let this = self.clone();
             self.spawn_with_state_at_block(parent_block.into(), move |state| {
                 let mut db = CacheDB::new(StateProviderDatabase::new(state));
                 let block_txs = block.transactions_with_sender();
 
+                #[cfg(not(feature = "telos"))]
                 // replay all transactions prior to the targeted transaction
                 this.replay_transactions_until(
                     &mut db,
@@ -639,10 +693,20 @@ pub trait Call:
                     *tx.tx_hash(),
                 )?;
 
+                #[cfg(feature = "telos")]
+                let index = this.replay_transactions_until(
+                    &mut db,
+                    cfg.clone(),
+                    block_env.clone(),
+                    block_txs,
+                    tx.hash,
+                    &telos_block_extension,
+                )?;
+
                 let env = EnvWithHandlerCfg::new_with_cfg_env(
                     cfg,
                     block_env,
-                    RpcNodeCore::evm_config(&this).tx_env(tx.as_signed(), tx.signer()),
+                    RpcNodeCore::evm_config(&this).tx_env(tx.as_signed(), tx.signer(), #[cfg(feature = "telos")] telos_block_extension.tx_env_at(index as u64)),
                 );
 
                 let (res, _) = this.transact(&mut db, env)?;
@@ -667,6 +731,8 @@ pub trait Call:
         block_env: BlockEnv,
         transactions: I,
         target_tx_hash: B256,
+        #[cfg(feature = "telos")]
+        telos_extension: &TelosBlockExtension,
     ) -> Result<usize, Self::Error>
     where
         DB: Database + DatabaseCommit,
@@ -684,7 +750,7 @@ pub trait Call:
                 break
             }
 
-            self.evm_config().fill_tx_env(evm.tx_mut(), tx, *sender);
+            self.evm_config().fill_tx_env(evm.tx_mut(), tx, *sender, #[cfg(feature = "telos")] telos_extension.tx_env_at(index as u64));
             evm.transact_commit().map_err(Self::Error::from_evm_err)?;
             index += 1;
         }
@@ -699,6 +765,8 @@ pub trait Call:
         &self,
         block_env: &BlockEnv,
         request: TransactionRequest,
+        #[cfg(feature = "telos")]
+        telos_tx_env: TelosTxEnv
     ) -> Result<TxEnv, Self::Error> {
         // Ensure that if versioned hashes are set, they're not empty
         if request.blob_versioned_hashes.as_ref().is_some_and(|hashes| hashes.is_empty()) {
@@ -747,6 +815,12 @@ pub trait Call:
         #[allow(clippy::needless_update)]
         let env = TxEnv {
             gas_limit,
+            #[cfg(feature = "telos")]
+            first_new_address: None,
+            #[cfg(feature = "telos")]
+            revision_number: telos_tx_env.revision,
+            #[cfg(feature = "telos")]
+            fixed_gas_price: telos_tx_env.gas_price,
             nonce,
             caller: from.unwrap_or_default(),
             gas_price,
@@ -779,8 +853,10 @@ pub trait Call:
         cfg: CfgEnvWithHandlerCfg,
         block: BlockEnv,
         request: TransactionRequest,
+        #[cfg(feature = "telos")]
+        telos_tx_env: TelosTxEnv
     ) -> Result<EnvWithHandlerCfg, Self::Error> {
-        let tx = self.create_txn_env(&block, request)?;
+        let tx = self.create_txn_env(&block, request, #[cfg(feature = "telos")] telos_tx_env)?;
         Ok(EnvWithHandlerCfg::new_with_cfg_env(cfg, block, tx))
     }
 
@@ -804,6 +880,8 @@ pub trait Call:
         mut request: TransactionRequest,
         db: &mut CacheDB<DB>,
         overrides: EvmOverrides,
+        #[cfg(feature = "telos")]
+        telos_tx_env: TelosTxEnv,
     ) -> Result<EnvWithHandlerCfg, Self::Error>
     where
         DB: DatabaseRef,
@@ -831,15 +909,13 @@ pub trait Call:
         // set nonce to None so that the correct nonce is chosen by the EVM
         request.nonce = None;
 
-        if let Some(block_overrides) = overrides.block {
-            apply_block_overrides(*block_overrides, db, &mut block);
-        }
+        // apply state overrides
         if let Some(state_overrides) = overrides.state {
             apply_state_overrides(state_overrides, db)?;
         }
 
         let request_gas = request.gas;
-        let mut env = self.build_call_evm_env(cfg, block, request)?;
+        let mut env = self.build_call_evm_env(cfg, block, request, #[cfg(feature = "telos")] telos_tx_env)?;
 
         if request_gas.is_none() {
             // No gas limit was provided in the request, so we need to cap the transaction gas limit

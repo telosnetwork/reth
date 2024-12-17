@@ -38,3 +38,13 @@ alloy-primitives.workspace = true
 
 # misc
 tracing.workspace = true
+
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
+[features]
+telos = [
+    "revm/telos",
+    "reth-evm-ethereum/telos",
+    "dep:reth-telos-primitives-traits",
+]

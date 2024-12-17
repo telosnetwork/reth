@@ -89,6 +89,9 @@ serde.workspace = true
 thiserror.workspace = true
 derive_more.workspace = true
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [dev-dependencies]
 reth-evm-ethereum.workspace = true
 reth-testing-utils.workspace = true
@@ -102,3 +105,11 @@ jsonrpsee = { workspace = true, features = ["client"] }
 
 [features]
 js-tracer = ["revm-inspectors/js-tracer", "reth-rpc-eth-types/js-tracer"]
+telos = [
+    "dep:reth-telos-primitives-traits",
+    "revm/telos",
+    "reth-rpc-types-compat/telos",
+    "reth-consensus-common/telos",
+    "reth-rpc-engine-api/telos",
+    "reth-rpc-eth-api/telos",
+]

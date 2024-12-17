@@ -116,6 +116,7 @@ test-utils = [
     "reth-trie/test-utils",
     "reth-prune-types/test-utils",
 ]
+telos = []
 
 [[bench]]
 name = "criterion"

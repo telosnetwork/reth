@@ -120,6 +120,10 @@ members = [
     "crates/storage/storage-api/",
     "crates/storage/zstd-compressors/",
     "crates/tasks/",
+    "crates/telos/bin",
+    "crates/telos/node",
+    "crates/telos/primitives-traits",
+    "crates/telos/rpc",
     "crates/tokio-util/",
     "crates/tracing/",
     "crates/transaction-pool/",
@@ -426,9 +430,9 @@ reth-trie-sparse = { path = "crates/trie/sparse" }
 reth-zstd-compressors = { path = "crates/storage/zstd-compressors", default-features = false }
 
 # revm
-revm = { version = "18.0.0", features = ["std"], default-features = false }
-revm-inspectors = "0.12.0"
-revm-primitives = { version = "14.0.0", default-features = false }
+revm = { git = "https://github.com/telosnetwork/telos-revm", branch = "telos-main-v1.1", features = ["std"], default-features = false }
+revm-inspectors = { git = "https://github.com/telosnetwork/telos-evm-inspectors", branch = "telos-main-v1.1" }
+revm-primitives = { git = "https://github.com/telosnetwork/telos-revm", branch = "telos-main-v1.1", default-features = false }
 
 # eth
 alloy-chains = { version = "0.1.32", default-features = false }
@@ -613,6 +617,14 @@ rstest = "0.23.0"
 tikv-jemalloc-ctl = "0.6"
 tikv-jemallocator = "0.6"
 tracy-client = "0.17.3"
+
+# telos
+reth-bin-telos = { path = "crates/telos/bin" }
+reth-node-telos = { path = "crates/telos/node" }
+reth-telos-rpc = { path = "crates/telos/rpc" }
+reth-telos-primitives-traits = { path = "crates/telos/primitives-traits" }
+reth-telos-rpc-engine-api = { path = "crates/telos/rpc-engine-api" }
+antelope-client = { git = "https://github.com/telosnetwork/antelope-rs", branch = "master" }
 
 # [patch.crates-io]
 # alloy-consensus = { git = "https://github.com/alloy-rs/alloy", rev = "5492e40" }

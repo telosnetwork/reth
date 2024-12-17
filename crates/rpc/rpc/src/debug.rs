@@ -44,6 +44,9 @@ use revm_inspectors::tracing::{
 use std::sync::Arc;
 use tokio::sync::{AcquireError, OwnedSemaphorePermit};
 
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosBlockExtension;
+
 /// `debug` API implementation.
 ///
 /// This type provides the functionality for handling `debug` related requests.
@@ -97,9 +100,14 @@ where
         cfg: CfgEnvWithHandlerCfg,
         block_env: BlockEnv,
         opts: GethDebugTracingOptions,
+        #[cfg(feature = "telos")]
+        telos_block_extension: &TelosBlockExtension,
     ) -> Result<Vec<TraceResult>, Eth::Error> {
         // replay all transactions of the block
         let this = self.clone();
+
+        #[cfg(feature = "telos")]
+        let telos_block_extension = telos_block_extension.clone();
         self.eth_api()
             .spawn_with_state_at_block(block.parent_hash().into(), move |state| {
                 let mut results = Vec::with_capacity(block.body.transactions().len());
@@ -116,7 +124,7 @@ where
                         env: Env::boxed(
                             cfg.cfg_env.clone(),
                             block_env.clone(),
-                            this.eth_api().evm_config().tx_env(tx, *signer),
+                            this.eth_api().evm_config().tx_env(tx, *signer, #[cfg(feature = "telos")] telos_block_extension.tx_env_at(index as u64)),
                         ),
                         handler_cfg: cfg.handler_cfg,
                     };
@@ -163,6 +171,13 @@ where
 
         let (cfg, block_env) = self.eth_api().evm_env_for_raw_block(block.header()).await?;
 
+        #[cfg(feature = "telos")]
+        let telos_block_extension = self
+                                .inner.provider
+                                .block_by_hash(parent.into())
+                                .unwrap().unwrap()  // TODO: this better
+                                .header.telos_block_extension.to_child();
+
         // Depending on EIP-2 we need to recover the transactions differently
         let senders =
             if self.provider().chain_spec().is_homestead_active_at_block(block.header().number()) {
@@ -194,6 +209,7 @@ where
             cfg,
             block_env,
             opts,
+            #[cfg(feature = "telos")] &telos_block_extension,
         )
         .await
     }
@@ -217,7 +233,7 @@ where
 
         let block = block.ok_or(EthApiError::HeaderNotFound(block_id))?;
 
-        self.trace_block(block, cfg, block_env, opts).await
+        self.trace_block(block, cfg, block_env, opts, #[cfg(feature = "telos")] telos_block_extension).await
     }
 
     /// Trace the transaction according to the provided options.
@@ -232,6 +248,8 @@ where
             None => return Err(EthApiError::TransactionNotFound.into()),
             Some(res) => res,
         };
+        #[cfg(feature = "telos")]
+        let telos_block_extension = block.header.telos_block_extension.clone();
         let (cfg, block_env, _) = self.eth_api().evm_env_at(block.hash().into()).await?;
 
         // we need to get the state of the parent block because we're essentially replaying the
@@ -258,13 +276,15 @@ where
                     block_env.clone(),
                     block_txs,
                     *tx.tx_hash(),
+                    #[cfg(feature = "telos")]
+                    &telos_block_extension
                 )?;
 
                 let env = EnvWithHandlerCfg {
                     env: Env::boxed(
                         cfg.cfg_env.clone(),
                         block_env,
-                        this.eth_api().evm_config().tx_env(tx.as_signed(), tx.signer()),
+                        this.eth_api().evm_config().tx_env(tx.as_signed(), tx.signer(), #[cfg(feature = "telos")] telos_block_extension.tx_env_at(index as u64)),
                     ),
                     handler_cfg: cfg.handler_cfg,
                 };
@@ -511,6 +531,9 @@ where
         let block = block.ok_or(EthApiError::HeaderNotFound(target_block))?;
         let GethDebugTracingCallOptions { tracing_options, mut state_overrides, .. } = opts;
 
+        #[cfg(feature = "telos")]
+        let telos_block_extension = block.header.telos_block_extension.clone();
+
         // we're essentially replaying the transactions in the block here, hence we need the state
         // that points to the beginning of the block, which is the state at the parent block
         let mut at = block.parent_hash();
@@ -534,6 +557,9 @@ where
                 let mut all_bundles = Vec::with_capacity(bundles.len());
                 let mut db = CacheDB::new(StateProviderDatabase::new(state));
 
+                #[cfg(feature = "telos")]
+                let mut tx_index = 0;
+
                 if replay_block_txs {
                     // only need to replay the transactions in the block if not all transactions are
                     // to be replayed
@@ -545,12 +571,16 @@ where
                             env: Env::boxed(
                                 cfg.cfg_env.clone(),
                                 block_env.clone(),
-                                this.eth_api().evm_config().tx_env(tx, *signer),
+                                this.eth_api().evm_config().tx_env(tx, *signer, #[cfg(feature = "telos")] telos_block_extension.tx_env_at(tx_index)),
                             ),
                             handler_cfg: cfg.handler_cfg,
                         };
                         let (res, _) = this.eth_api().transact(&mut db, env)?;
                         db.commit(res.state);
+                        #[cfg(feature = "telos")]
+                        {
+                            tx_index += 1;
+                        }
                     }
                 }
 
@@ -575,6 +605,8 @@ where
                             tx,
                             &mut db,
                             overrides,
+                            #[cfg(feature = "telos")]
+                            telos_block_extension.tx_env_at(tx_index),
                         )?;
 
                         let (trace, state) = this.trace_transaction(
@@ -593,6 +625,10 @@ where
                             db.commit(state);
                         }
                         results.push(trace);
+                        #[cfg(feature = "telos")]
+                        {
+                            tx_index += 1;
+                        }
                     }
                     // Increment block_env number and timestamp for the next bundle
                     block_env.number += U256::from(1);
@@ -633,6 +669,8 @@ where
                         |statedb: &State<_>| {
                             witness_record.record_executed_state(statedb);
                         },
+                        #[cfg(feature = "telos")]
+                        Default::default(),
                     )
                     .map_err(|err| EthApiError::Internal(err.into()))?;
 
@@ -816,6 +854,11 @@ where
 {
     /// Handler for `debug_getRawHeader`
     async fn raw_header(&self, block_id: BlockId) -> RpcResult<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let header = match block_id {
             BlockId::Hash(hash) => self.provider().header(&hash.into()).to_rpc_result()?,
             BlockId::Number(number_or_tag) => {
@@ -840,6 +883,11 @@ where
 
     /// Handler for `debug_getRawBlock`
     async fn raw_block(&self, block_id: BlockId) -> RpcResult<Bytes> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let block = self
             .provider()
             .block_by_id(block_id)
@@ -862,6 +910,11 @@ where
     /// Handler for `debug_getRawTransactions`
     /// Returns the bytes of the transaction for the given hash.
     async fn raw_transactions(&self, block_id: BlockId) -> RpcResult<Vec<Bytes>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         let block = self
             .provider()
             .block_with_senders_by_id(block_id, TransactionVariant::NoHash)
@@ -872,6 +925,11 @@ where
 
     /// Handler for `debug_getRawReceipts`
     async fn raw_receipts(&self, block_id: BlockId) -> RpcResult<Vec<Bytes>> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            BlockId::Number(BlockNumberOrTag::Pending) => BlockId::Number(BlockNumberOrTag::Latest),
+            _ => block_id,
+        };
         Ok(self
             .provider()
             .receipts_by_block_id(block_id)
@@ -926,6 +984,11 @@ where
         block: BlockNumberOrTag,
         opts: Option<GethDebugTracingOptions>,
     ) -> RpcResult<Vec<TraceResult>> {
+        #[cfg(feature = "telos")]
+        let block = match block {
+            BlockNumberOrTag::Pending => BlockNumberOrTag::Latest,
+            _ => block,
+        };
         let _permit = self.acquire_trace_permit().await;
         Self::debug_trace_block(self, block.into(), opts.unwrap_or_default())
             .await
@@ -951,6 +1014,11 @@ where
         block_id: Option<BlockId>,
         opts: Option<GethDebugTracingCallOptions>,
     ) -> RpcResult<GethTrace> {
+        #[cfg(feature = "telos")]
+        let block_id = match block_id {
+            Some(BlockId::Number(BlockNumberOrTag::Pending)) => Some(BlockId::Number(BlockNumberOrTag::Latest)),
+            _ => block_id,
+        };
         let _permit = self.acquire_trace_permit().await;
         Self::debug_trace_call(self, request, block_id, opts.unwrap_or_default())
             .await

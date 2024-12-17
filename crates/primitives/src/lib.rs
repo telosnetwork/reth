@@ -89,3 +89,14 @@ impl reth_primitives_traits::NodePrimitives for EthPrimitives {
     type TxType = crate::TxType;
     type Receipt = crate::Receipt;
 }
+/// Telos specific re-exports
+#[cfg(feature = "telos")]
+mod telos {
+    pub use reth_primitives_traits::constants::{
+	TEVMMAINNET_BASE_GENESIS_HASH, TEVMMAINNET_GENESIS_HASH, TEVMTESTNET_BASE_GENESIS_HASH,
+	TEVMTESTNET_GENESIS_HASH,
+    };
+}
+
+#[cfg(feature = "telos")]
+pub use telos::*;

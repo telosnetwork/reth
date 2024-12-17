@@ -63,3 +63,6 @@ serde = [
 	"reth-trie?/serde",
 	"reth-ethereum-forks/serde"
 ]
+telos = [
+    "revm/telos",
+]

@@ -36,6 +36,9 @@ alloy-rpc-types-engine.workspace = true
 # misc
 jsonrpsee = { workspace = true, features = ["server", "macros"] }
 
+# telos
+reth-telos-rpc-engine-api.workspace = true
+
 [features]
 client = [
     "jsonrpsee/client",

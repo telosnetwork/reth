@@ -8,6 +8,8 @@ use reth_primitives::{BlockWithSenders, NodePrimitives};
 use reth_prune_types::PruneModes;
 use reth_storage_errors::provider::ProviderError;
 use revm::State;
+#[cfg(feature = "telos")]
+use reth_telos_rpc_engine_api::structs::TelosEngineAPIExtraFields;
 use revm_primitives::db::Database;
 
 use crate::{
@@ -49,7 +51,7 @@ impl<DB, P: NodePrimitives> Executor<DB> for NoopBlockExecutorProvider<P> {
     type Output = BlockExecutionOutput<P::Receipt>;
     type Error = BlockExecutionError;
 
-    fn execute(self, _: Self::Input<'_>) -> Result<Self::Output, Self::Error> {
+    fn execute(self, _: Self::Input<'_>, #[cfg(feature = "telos")] _telos_extra_fields: Option<TelosEngineAPIExtraFields>) -> Result<Self::Output, Self::Error> {
         Err(BlockExecutionError::msg(UNAVAILABLE_FOR_NOOP))
     }
 
@@ -57,6 +59,8 @@ impl<DB, P: NodePrimitives> Executor<DB> for NoopBlockExecutorProvider<P> {
         self,
         _: Self::Input<'_>,
         _: F,
+        #[cfg(feature = "telos")]
+        _: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         F: FnMut(&State<DB>),

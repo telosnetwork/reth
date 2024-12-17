@@ -114,6 +114,9 @@ arbitrary = [
 	"reth-primitives-traits/arbitrary",
 	"smallvec/arbitrary",
 ]
+telos = [
+    "revm/telos",
+]
 
 [[bench]]
 name = "truncate"

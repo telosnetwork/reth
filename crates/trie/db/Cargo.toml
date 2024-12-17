@@ -86,3 +86,6 @@ test-utils = [
 	"reth-provider/test-utils",
 	"reth-trie/test-utils",
 ]
+telos = [
+    "revm/telos",
+]

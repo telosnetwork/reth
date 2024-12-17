@@ -90,3 +90,6 @@ arbitrary = [
 	"alloy-trie?/arbitrary",
 	"op-alloy-consensus?/arbitrary"
 ]
+telos = [
+    "reth-codecs-derive/telos",
+]

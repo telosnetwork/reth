@@ -62,6 +62,9 @@ pub fn try_payload_v1_to_block(payload: ExecutionPayloadV1) -> Result<Block, Pay
         // it will fit in an u64. This is not always necessarily true, although it is extremely
         // unlikely not to be the case, a u64 maximum would have 2^64 which equates to 18 ETH per
         // gas.
+        #[cfg(feature = "telos")]
+        base_fee_per_gas: None,
+        #[cfg(not(feature = "telos"))]
         base_fee_per_gas: Some(
             payload
                 .base_fee_per_gas
@@ -77,6 +80,8 @@ pub fn try_payload_v1_to_block(payload: ExecutionPayloadV1) -> Result<Block, Pay
         ommers_hash: EMPTY_OMMER_ROOT_HASH,
         difficulty: Default::default(),
         nonce: Default::default(),
+        #[cfg(feature = "telos")]
+        telos_block_extension: Default::default(),
         target_blobs_per_block: None,
     };
 
