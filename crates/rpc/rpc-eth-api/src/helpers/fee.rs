@@ -340,6 +340,8 @@ pub trait LoadFee: LoadBlock {
             let base_fee = header.clone().and_then(|h| h.base_fee_per_gas).unwrap_or_default();
             #[cfg(feature = "telos")]
             let base_fee = header.and_then(|h| Some(h.telos_block_extension.get_last_gas_price())).unwrap_or_default();
+            #[cfg(feature = "telos")]
+            let suggested_tip = U256::ZERO;
             Ok(suggested_tip + U256::from(base_fee))
         }
     }
