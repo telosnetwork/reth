@@ -2,6 +2,7 @@ use core::fmt::Debug;
 
 pub use super::header::{serde_bincode_compat as header, serde_bincode_compat::*};
 use serde::{de::DeserializeOwned, Serialize};
+use reth_telos_primitives_traits::TelosHeader;
 
 /// Trait for types that can be serialized and deserialized using bincode.
 pub trait SerdeBincodeCompat: Sized + 'static {
@@ -10,5 +11,10 @@ pub trait SerdeBincodeCompat: Sized + 'static {
 }
 
 impl SerdeBincodeCompat for alloy_consensus::Header {
+    type BincodeRepr<'a> = alloy_consensus::serde_bincode_compat::Header<'a>;
+}
+
+#[cfg(feature = "telos")]
+impl SerdeBincodeCompat for TelosHeader {
     type BincodeRepr<'a> = alloy_consensus::serde_bincode_compat::Header<'a>;
 }

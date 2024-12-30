@@ -1,6 +1,4 @@
 /// Telos custom header, borrowed from alloy_consensus with the TelosBlockExtension field added
-
-
 use alloy_consensus::{EMPTY_OMMER_ROOT_HASH, EMPTY_ROOT_HASH};
 use alloy_eips::{
     eip1559::{calc_next_block_base_fee, BaseFeeParams},
@@ -955,8 +953,8 @@ impl TryFrom<alloy_rpc_types::Header> for TelosHeader {
     fn try_from(header: alloy_rpc_types::Header) -> Result<Self, Self::Error> {
         Ok(Self {
             parent_hash: header.parent_hash,
-            ommers_hash: header.uncles_hash,
-            beneficiary: header.miner,
+            ommers_hash: header.inner.ommers_hash,
+            beneficiary: header.inner.beneficiary,
             state_root: header.state_root,
             transactions_root: header.transactions_root,
             receipts_root: header.receipts_root,
@@ -966,15 +964,15 @@ impl TryFrom<alloy_rpc_types::Header> for TelosHeader {
             gas_limit: header.gas_limit,
             gas_used: header.gas_used,
             timestamp: header.timestamp,
-            extra_data: header.extra_data,
-            mix_hash: header.mix_hash.unwrap_or_default(),
-            nonce: header.nonce.unwrap_or_default(),
+            extra_data: header.extra_data.clone(),
+            mix_hash: header.mix_hash,
+            nonce: header.nonce,
             base_fee_per_gas: header.base_fee_per_gas,
             withdrawals_root: header.withdrawals_root,
             blob_gas_used: header.blob_gas_used,
             excess_blob_gas: header.excess_blob_gas,
             parent_beacon_block_root: header.parent_beacon_block_root,
-            requests_root: header.requests_root,
+            requests_root: header.inner.requests_hash,
             telos_block_extension: TelosBlockExtension::default(),
         })
     }

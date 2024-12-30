@@ -14,7 +14,7 @@ alloy-consensus = { workspace = true }
 alloy-primitives = { version = "0.8.5", features = ["rlp"], default-features = false }
 alloy-eips = { version = "0.4", features = ["kzg-sidecar"], default-features = false }
 alloy-rlp = { version = "0.3", default-features = false }
-alloy-rpc-types = { version = "0.4", default-features = false }
+alloy-rpc-types = { workspace = true }
 alloy-serde = { version = "0.4", optional = true, default-features = false }
 serde = { version = "1.0", features = ["derive", "alloc"], default-features = false }
 serde_with = { version = "3.3.0", optional = true }

@@ -7,7 +7,7 @@ use revm_primitives::db::DatabaseCommit;
 use revm_primitives::state::AccountStatus;
 use sha2::{Digest, Sha256};
 use tracing::{debug, warn, info};
-use reth_primitives::KECCAK_EMPTY;
+use alloy_consensus::constants::KECCAK_EMPTY;
 use reth_storage_errors::provider::ProviderError;
 use crate::structs::{TelosAccountStateTableRow, TelosAccountTableRow};
 
