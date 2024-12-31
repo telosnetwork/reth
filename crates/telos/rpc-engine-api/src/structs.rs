@@ -1,6 +1,6 @@
+use alloy_consensus::Receipt;
 use serde::{Deserialize, Serialize};
 use alloy_primitives::{Address, Bytes, U256};
-use reth_primitives::Receipt;
 
 /// Telos EVM Account Table Row
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]

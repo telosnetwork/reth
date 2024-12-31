@@ -11741,6 +11741,7 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 name = "telos-consensus-client"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "alloy-rpc-types",
  "alloy-rpc-types-engine",
  "antelope-client",
@@ -11749,7 +11750,6 @@ dependencies = [
  "hex",
  "jsonwebtoken",
  "reqwest 0.11.27",
- "reth-primitives",
  "rocksdb",
  "serde",
  "serde_json",
