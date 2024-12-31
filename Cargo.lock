@@ -1182,6 +1182,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "antelope-client"
+version = "0.3.0"
+source = "git+https://github.com/telosnetwork/antelope-rs.git?rev=d701cd9ca2e87e8e0fd99746f9c672cb3536e5ec#d701cd9ca2e87e8e0fd99746f9c672cb3536e5ec"
+dependencies = [
+ "antelope-client-macros",
+ "async-trait",
+ "base64 0.21.7",
+ "bs58",
+ "chrono",
+ "digest 0.10.7",
+ "ecdsa",
+ "flate2",
+ "hex",
+ "hmac 0.12.1",
+ "k256",
+ "log",
+ "once_cell",
+ "p256",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "reqwest 0.11.27",
+ "ripemd",
+ "serde",
+ "serde-big-array",
+ "serde_json",
+ "sha2 0.10.8",
+ "signature",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "antelope-client-macros"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9133,7 +9166,7 @@ dependencies = [
  "alloy-signer-local",
  "alloy-sol-types",
  "alloy-transport-http 0.7.3",
- "antelope-client",
+ "antelope-client 0.3.0 (git+https://github.com/telosnetwork/antelope-rs?branch=master)",
  "clap",
  "derive_more",
  "env_logger",
@@ -10386,7 +10419,7 @@ dependencies = [
  "alloy-network 0.7.3",
  "alloy-primitives",
  "alloy-rpc-types",
- "antelope-client",
+ "antelope-client 0.3.0 (git+https://github.com/telosnetwork/antelope-rs?branch=master)",
  "async-trait",
  "derive_more",
  "jsonrpsee-types",
@@ -11915,14 +11948,15 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 [[package]]
 name = "telos-consensus-client"
 version = "0.1.0"
-source = "git+https://github.com/telosnetwork/telos-consensus-client?rev=b4e5890cfb4e6164ca99d1c47948e7cad8575167#b4e5890cfb4e6164ca99d1c47948e7cad8575167"
+source = "git+https://github.com/telosnetwork/telos-consensus-client?rev=7381c7131581c06a2a6c2cf0d331983a1e65f14e#7381c7131581c06a2a6c2cf0d331983a1e65f14e"
 dependencies = [
  "alloy-primitives",
  "alloy-rpc-types",
  "alloy-rpc-types-engine",
- "antelope-client",
+ "antelope-client 0.3.0 (git+https://github.com/telosnetwork/antelope-rs.git?rev=d701cd9ca2e87e8e0fd99746f9c672cb3536e5ec)",
  "clap",
  "eyre",
+ "futures",
  "hex",
  "jsonwebtoken",
  "reqwest 0.11.27",
@@ -11959,7 +11993,7 @@ dependencies = [
 [[package]]
 name = "telos-translator-rs"
 version = "0.1.0"
-source = "git+https://github.com/telosnetwork/telos-consensus-client?rev=b4e5890cfb4e6164ca99d1c47948e7cad8575167#b4e5890cfb4e6164ca99d1c47948e7cad8575167"
+source = "git+https://github.com/telosnetwork/telos-consensus-client?rev=7381c7131581c06a2a6c2cf0d331983a1e65f14e#7381c7131581c06a2a6c2cf0d331983a1e65f14e"
 dependencies = [
  "alloy-consensus 0.7.3",
  "alloy-eips 0.7.3",
@@ -11967,7 +12001,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-rpc-types-engine",
  "alloy-trie",
- "antelope-client",
+ "antelope-client 0.3.0 (git+https://github.com/telosnetwork/antelope-rs.git?rev=d701cd9ca2e87e8e0fd99746f9c672cb3536e5ec)",
  "bytes",
  "clap",
  "eyre",

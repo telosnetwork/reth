@@ -79,8 +79,8 @@ reth-chainspec.workspace = true
 reth-e2e-test-utils.workspace = true
 eyre.workspace = true
 
-telos-consensus-client = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "b4e5890cfb4e6164ca99d1c47948e7cad8575167" }
-telos-translator-rs = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "b4e5890cfb4e6164ca99d1c47948e7cad8575167" }
+telos-consensus-client = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "7381c7131581c06a2a6c2cf0d331983a1e65f14e" }
+telos-translator-rs = { git = "https://github.com/telosnetwork/telos-consensus-client", rev = "7381c7131581c06a2a6c2cf0d331983a1e65f14e" }
 #telos-consensus-client = { path = "../../../../telos-consensus-client/client" }
 #telos-translator-rs = { path = "../../../../telos-consensus-client/translator" }
 
