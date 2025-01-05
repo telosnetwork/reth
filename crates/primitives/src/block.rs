@@ -3,7 +3,10 @@ use crate::{
     RecoveredTx, SealedHeader, TransactionSigned,
 };
 use alloc::vec::Vec;
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_eips::{eip2718::Encodable2718, eip4895::Withdrawals};
 use alloy_primitives::{Address, Bytes, B256};
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};

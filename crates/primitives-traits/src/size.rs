@@ -1,5 +1,7 @@
 use alloy_consensus::{Header, TxEip1559, TxEip2930, TxEip4844, TxEip7702, TxLegacy, TxType};
 use alloy_primitives::{PrimitiveSignature as Signature, TxHash};
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader;
 
 /// Trait for calculating a heuristic for the in-memory size of a struct.
 #[auto_impl::auto_impl(&, Arc, Box)]
@@ -48,6 +50,9 @@ impl_in_mem_size!(Header, TxLegacy, TxEip2930, TxEip1559, TxEip7702, TxEip4844);
 
 #[cfg(feature = "op")]
 impl_in_mem_size_size_of!(op_alloy_consensus::OpTxType);
+
+#[cfg(feature = "telos")]
+impl_in_mem_size!(TelosHeader);
 
 #[cfg(test)]
 mod tests {

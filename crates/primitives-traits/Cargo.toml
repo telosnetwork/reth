@@ -43,7 +43,7 @@ proptest = { workspace = true, optional = true }
 proptest-arbitrary-interop = { workspace = true, optional = true }
 
 # telos
-reth-telos-primitives-traits = { workspace = true, optional = true, features = ["serde"] }
+reth-telos-primitives-traits = { workspace = true, optional = true, features = ["serde", "serde-bincode-compat"] }
 
 [dev-dependencies]
 alloy-primitives = { workspace = true, features = ["arbitrary"] }

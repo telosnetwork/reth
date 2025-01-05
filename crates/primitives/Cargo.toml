@@ -179,6 +179,7 @@ telos = [
     "dep:reth-telos-primitives-traits",
     "reth-primitives-traits/telos",
     "revm-primitives/telos",
+	"reth-primitives-traits/telos",
 ]
 
 [[bench]]

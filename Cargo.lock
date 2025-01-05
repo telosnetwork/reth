@@ -248,11 +248,7 @@ checksum = "ea59dc42102bc9a1905dc57901edc6dd48b9f38115df86c7d252acba70d71d04"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
- "arbitrary",
- "k256",
- "rand 0.8.5",
  "serde",
- "serde_with",
 ]
 
 [[package]]
@@ -282,7 +278,6 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "alloy-serde 0.4.2",
- "arbitrary",
  "c-kzg",
  "derive_more",
  "once_cell",
@@ -824,7 +819,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9dff0ab1cdd43ca001e324dc27ee0e8606bd2161d6623c63e0e0b8c4dfc13600"
 dependencies = [
  "alloy-primitives",
- "arbitrary",
  "serde",
  "serde_json",
 ]
@@ -7533,6 +7527,7 @@ dependencies = [
  "reth-ethereum-forks 1.1.4",
  "reth-network-peers",
  "reth-primitives-traits 1.1.4",
+ "reth-telos-primitives-traits",
  "reth-trie-common 1.1.4",
  "serde_json",
 ]
@@ -10398,12 +10393,14 @@ name = "reth-telos-primitives-traits"
 version = "1.1.4"
 dependencies = [
  "alloy-consensus 0.7.3",
- "alloy-eips 0.4.2",
+ "alloy-eips 0.7.3",
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rpc-types",
  "alloy-serde 0.4.2",
+ "alloy-trie",
  "arbitrary",
+ "auto_impl",
  "bytes",
  "c-kzg",
  "modular-bitfield",

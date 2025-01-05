@@ -12,11 +12,13 @@ exclude.workspace = true
 arbitrary = { workspace = true, optional = true }
 alloy-consensus = { workspace = true }
 alloy-primitives = { version = "0.8.5", features = ["rlp"], default-features = false }
-alloy-eips = { version = "0.4", features = ["kzg-sidecar"], default-features = false }
+alloy-eips = { version = "0.7", features = ["kzg-sidecar"], default-features = false }
 alloy-rlp = { version = "0.3", default-features = false }
 alloy-rpc-types = { workspace = true }
 alloy-serde = { version = "0.4", optional = true, default-features = false }
-serde = { version = "1.0", features = ["derive", "alloc"], default-features = false }
+alloy-trie = { workspace = true }
+auto_impl = { version = "1.2" }
+serde = { version = "1.0", features = ["derive", "alloc"], optional = true, default-features = false }
 serde_with = { version = "3.3.0", optional = true }
 bytes.workspace = true
 c-kzg = { version = "1.0", features = ["serde"], optional = true, default-features = false }
@@ -43,14 +45,15 @@ kzg = [
     "std",
 ]
 serde = [
+    "dep:serde",
     "alloy-primitives/serde",
     "dep:alloy-serde",
     "alloy-eips/serde",
+    "alloy-trie/serde",
 ]
 serde-bincode-compat = [
     "alloy-eips/serde-bincode-compat",
     "serde_with",
-    "serde"
 ]
 std = [
     "alloy-eips/std",

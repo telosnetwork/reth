@@ -7,12 +7,14 @@
 )]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 
-mod header;
+mod block;
+pub use block::TelosHeader;
 
 use alloy_primitives::U256;
 use serde::{Deserialize, Serialize};
 use reth_codecs::Compact;
-pub use header::TelosHeader;
+
+extern crate alloc;
 
 /// Bincode-compatible serde implementations for consensus types.
 ///
@@ -24,7 +26,7 @@ pub use header::TelosHeader;
 #[cfg(all(feature = "serde", feature = "serde-bincode-compat"))]
 pub mod serde_bincode_compat {
     pub use super::{
-        header::serde_bincode_compat::*,
+        block::serde_bincode_compat::*,
     };
 }
 

@@ -30,6 +30,9 @@ once_cell.workspace = true
 serde_json.workspace = true
 derive_more.workspace = true
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true, features = ["serde", "serde-bincode-compat"] }
+
 [dev-dependencies]
 # eth
 alloy-trie = { workspace = true, features = ["arbitrary"] }
@@ -39,7 +42,9 @@ alloy-genesis.workspace = true
 
 [features]
 default = ["std"]
-telos = []
+telos = [
+	"dep:reth-telos-primitives-traits",
+]
 std = [
 	"alloy-chains/std",
 	"alloy-eips/std",

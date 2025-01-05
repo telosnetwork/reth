@@ -1,7 +1,10 @@
 use crate::{ChainSpec, DepositContract};
 use alloc::{boxed::Box, vec::Vec};
 use alloy_chains::Chain;
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_eips::eip1559::BaseFeeParams;
 use alloy_genesis::Genesis;
 use alloy_primitives::B256;

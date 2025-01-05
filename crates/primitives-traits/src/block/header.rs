@@ -36,3 +36,5 @@ pub trait BlockHeader:
 }
 
 impl BlockHeader for alloy_consensus::Header {}
+#[cfg(feature = "telos")]
+impl BlockHeader for reth_telos_primitives_traits::TelosHeader {}

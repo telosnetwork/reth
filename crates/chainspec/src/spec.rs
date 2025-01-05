@@ -11,12 +11,13 @@ use alloy_genesis::Genesis;
 use alloy_primitives::{address, b256, Address, BlockNumber, B256, U256};
 use derive_more::From;
 
-use alloy_consensus::{
-    constants::{
-        DEV_GENESIS_HASH, HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
-    },
-    Header,
+use alloy_consensus::constants::{
+    DEV_GENESIS_HASH, HOLESKY_GENESIS_HASH, MAINNET_GENESIS_HASH, SEPOLIA_GENESIS_HASH,
 };
+#[cfg(not(feature = "telos"))]
+use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_eips::eip1559::ETHEREUM_BLOCK_GAS_LIMIT;
 use reth_ethereum_forks::{
     ChainHardforks, DisplayHardforks, EthereumHardfork, EthereumHardforks, ForkCondition,
@@ -30,6 +31,27 @@ use reth_primitives_traits::SealedHeader;
 use reth_trie_common::root::state_root_ref_unhashed;
 
 use crate::{constants::MAINNET_DEPOSIT_CONTRACT, once_cell_set, EthChainSpec, LazyLock, OnceLock};
+
+#[cfg(feature = "telos")]
+/// Tevmmainnet genesis hash.
+const TEVMMAINNET_GENESIS_HASH: B256 =
+    b256!("36fe7024b760365e3970b7b403e161811c1e626edd68460272fcdfa276272563");
+
+#[cfg(feature = "telos")]
+/// Tevmtestnet genesis hash.
+const TEVMTESTNET_GENESIS_HASH: B256 =
+    b256!("b25034033c9ca7a40e879ddcc29cf69071a22df06688b5fe8cc2d68b4e0528f9");
+
+#[cfg(feature = "telos")]
+/// Tevmmainnet base genesis hash.
+const TEVMMAINNET_BASE_GENESIS_HASH: B256 =
+    b256!("757720a8e51c63ef1d4f907d6569dacaa965e91c2661345902de18af11f81063");
+
+#[cfg(feature = "telos")]
+/// Tevmtestnet base genesis hash.
+/// TODO: Block hash not finalized yet, need to modify the parent hash
+const TEVMTESTNET_BASE_GENESIS_HASH: B256 =
+    b256!("a6da3143bdeab454a923ac47589700ebe75d734f26e1f9201caa9b7268045d02");
 
 /// The Ethereum mainnet spec
 pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
@@ -128,7 +150,7 @@ pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
 
 #[cfg(feature = "telos")]
 /// The Tevmmainnet spec
-pub static TEVMMAINNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static TEVMMAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     ChainSpec {
         chain: Chain::from_id(40),
         genesis: serde_json::from_str(include_str!("../res/genesis/tevmmainnet.json"))
@@ -159,7 +181,7 @@ pub static TEVMMAINNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
 
 #[cfg(feature = "telos")]
 /// The Tevmtestnet spec
-pub static TEVMTESTNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static TEVMTESTNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     ChainSpec {
         chain: Chain::from_id(41),
         genesis: serde_json::from_str(include_str!("../res/genesis/tevmtestnet.json"))
@@ -190,7 +212,7 @@ pub static TEVMTESTNET: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
 
 #[cfg(feature = "telos")]
 /// The Tevmmainnet-base spec
-pub static TEVMMAINNET_BASE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static TEVMMAINNET_BASE: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     ChainSpec {
         chain: Chain::from_id(40),
         genesis: serde_json::from_str(include_str!("../res/genesis/tevmmainnet_base.json"))
@@ -222,7 +244,7 @@ pub static TEVMMAINNET_BASE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
 #[cfg(feature = "telos")]
 /// The Tevmtestnet-base spec
 /// TODO: Block hash not finalized yet, need to modify the parent hash
-pub static TEVMTESTNET_BASE: Lazy<Arc<ChainSpec>> = Lazy::new(|| {
+pub static TEVMTESTNET_BASE: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     ChainSpec {
         chain: Chain::from_id(41),
         genesis: serde_json::from_str(include_str!("../res/genesis/tevmtestnet_base.json"))

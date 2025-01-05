@@ -83,20 +83,12 @@ pub struct EthPrimitives;
 
 impl reth_primitives_traits::NodePrimitives for EthPrimitives {
     type Block = crate::Block;
+    #[cfg(not(feature = "telos"))]
     type BlockHeader = alloy_consensus::Header;
+    #[cfg(feature = "telos")]
+    type BlockHeader = reth_telos_primitives_traits::TelosHeader;
     type BlockBody = crate::BlockBody;
     type SignedTx = crate::TransactionSigned;
     type TxType = crate::TxType;
     type Receipt = crate::Receipt;
 }
-/// Telos specific re-exports
-#[cfg(feature = "telos")]
-mod telos {
-    pub use reth_primitives_traits::constants::{
-	TEVMMAINNET_BASE_GENESIS_HASH, TEVMMAINNET_GENESIS_HASH, TEVMTESTNET_BASE_GENESIS_HASH,
-	TEVMTESTNET_GENESIS_HASH,
-    };
-}
-
-#[cfg(feature = "telos")]
-pub use telos::*;
