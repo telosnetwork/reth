@@ -116,6 +116,7 @@ arbitrary = [
 ]
 telos = [
     "revm/telos",
+	"reth-eth-wire-types/telos",
 ]
 
 [[bench]]

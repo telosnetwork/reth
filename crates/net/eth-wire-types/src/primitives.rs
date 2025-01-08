@@ -48,7 +48,10 @@ pub trait NetworkPrimitives:
 pub struct EthNetworkPrimitives;
 
 impl NetworkPrimitives for EthNetworkPrimitives {
+    #[cfg(not(feature = "telos"))]
     type BlockHeader = alloy_consensus::Header;
+    #[cfg(feature = "telos")]
+    type BlockHeader = reth_telos_primitives_traits::TelosHeader;
     type BlockBody = reth_primitives::BlockBody;
     type Block = reth_primitives::Block;
     type BroadcastedTransaction = reth_primitives::TransactionSigned;

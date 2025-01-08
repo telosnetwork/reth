@@ -1052,7 +1052,7 @@ impl SignedTransaction for TransactionSigned {
         }
         self.encode_for_signing(buf);
         let signature_hash = keccak256(buf);
-        recover_signer_unchecked(&self.signature, signature_hash)
+        recover_signer_unchecked(&self.signature, signature_hash, #[cfg(feature = "telos")] self.chain_id())
     }
 }
 

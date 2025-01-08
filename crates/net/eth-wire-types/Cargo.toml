@@ -36,6 +36,9 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 proptest = { workspace = true, optional = true }
 proptest-arbitrary-interop = { workspace = true, optional = true }
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [dev-dependencies]
 reth-primitives = { workspace = true, features = ["arbitrary"] }
 alloy-genesis.workspace = true
@@ -69,4 +72,7 @@ serde = [
 	"rand/serde",
 	"reth-primitives-traits/serde",
 	"reth-ethereum-forks/serde"
+]
+telos = [
+	"dep:reth-telos-primitives-traits",
 ]

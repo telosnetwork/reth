@@ -8,7 +8,11 @@
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 
-use alloy_consensus::{Header, EMPTY_OMMER_ROOT_HASH};
+use alloy_consensus::EMPTY_OMMER_ROOT_HASH;
+#[cfg(not(feature = "telos"))]
+use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_primitives::U256;
 use reth_chainspec::{EthChainSpec, EthereumHardfork, EthereumHardforks};
 use reth_consensus::{
@@ -23,7 +27,10 @@ use reth_consensus_common::validation::{
 use reth_primitives::{
     Block, BlockBody, BlockWithSenders, NodePrimitives, Receipt, SealedBlock, SealedHeader,
 };
+#[cfg(not(feature = "telos"))]
 use reth_primitives_traits::constants::MINIMUM_GAS_LIMIT;
+#[cfg(feature = "telos")]
+use reth_primitives_traits as _;
 use std::{fmt::Debug, sync::Arc, time::SystemTime};
 
 /// The bound divisor of the gas limit, used in update calculations.

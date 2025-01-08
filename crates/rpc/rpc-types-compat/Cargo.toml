@@ -28,8 +28,13 @@ alloy-consensus.workspace = true
 serde.workspace = true
 jsonrpsee-types.workspace = true
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [dev-dependencies]
 serde_json.workspace = true
 
 [features]
-telos = []
+telos = [
+    "dep:reth-telos-primitives-traits",
+]

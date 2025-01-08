@@ -596,7 +596,15 @@ impl SignedTransaction for PooledTransactionsElement {
     fn recover_signer_unchecked_with_buf(&self, buf: &mut Vec<u8>) -> Option<Address> {
         self.encode_for_signing(buf);
         let signature_hash = keccak256(buf);
-        recover_signer_unchecked(self.signature(), signature_hash)
+        #[cfg(feature = "telos")]
+        let chain_id = match self {
+            PooledTransactionsElement::Legacy(signed) => signed.tx().chain_id,
+            PooledTransactionsElement::Eip2930(signed) => Some(signed.tx().chain_id),
+            PooledTransactionsElement::Eip1559(signed) => Some(signed.tx().chain_id),
+            PooledTransactionsElement::Eip7702(signed) => Some(signed.tx().chain_id),
+            PooledTransactionsElement::BlobTransaction(_blob_transaction) => None,
+        };
+        recover_signer_unchecked(self.signature(), signature_hash, #[cfg(feature = "telos")] chain_id)
     }
 }
 

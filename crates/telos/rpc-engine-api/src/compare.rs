@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 use std::fmt::Display;
 use alloy_primitives::{Address, B256, Bytes, U256};
-use revm_primitives::{Account, AccountInfo, Bytecode, EvmStorageSlot, HashMap};
+use revm_primitives::{Account, AccountInfo, Bytecode, /*EvmStorageSlot,*/ HashMap};
 use revm::{Database, Evm, State, TransitionAccount, db::AccountStatus as DBAccountStatus};
 use revm_primitives::db::DatabaseCommit;
 use revm_primitives::state::AccountStatus;
 use sha2::{Digest, Sha256};
-use tracing::{debug, warn, info};
+use tracing::{debug, warn};
 use alloy_consensus::constants::KECCAK_EMPTY;
 use reth_storage_errors::provider::ProviderError;
 use crate::structs::{TelosAccountStateTableRow, TelosAccountTableRow};
@@ -16,7 +16,7 @@ struct StateOverride {
 }
 
 impl StateOverride {
-    pub fn new() -> Self {
+    fn new() -> Self {
         StateOverride {
             accounts: HashMap::default()
         }
@@ -44,9 +44,9 @@ impl StateOverride {
         }
     }
 
-    pub fn override_account<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, telos_row: &TelosAccountTableRow) {
+    fn override_account<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, telos_row: &TelosAccountTableRow) {
         self.maybe_init_account(revm_db, telos_row.address);
-        let mut acc = self.accounts.get_mut(&telos_row.address).unwrap();
+        let acc = self.accounts.get_mut(&telos_row.address).unwrap();
         acc.info.balance = telos_row.balance;
         acc.info.nonce = telos_row.nonce;
         if telos_row.code.len() > 0 {
@@ -58,21 +58,21 @@ impl StateOverride {
         }
     }
 
-    pub fn override_balance<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, balance: U256) {
+    fn override_balance<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, balance: U256) {
         self.maybe_init_account(revm_db, address);
-        let mut acc = self.accounts.get_mut(&address).unwrap();
+        let acc = self.accounts.get_mut(&address).unwrap();
         acc.info.balance = balance;
     }
 
-    pub fn override_nonce<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, nonce: u64) {
+    fn override_nonce<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, nonce: u64) {
         self.maybe_init_account(revm_db, address);
-        let mut acc = self.accounts.get_mut(&address).unwrap();
+        let acc = self.accounts.get_mut(&address).unwrap();
         acc.info.nonce = nonce;
     }
 
-    pub fn override_code<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, maybe_code: &Bytes) {
+    fn override_code<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, maybe_code: &Bytes) {
         self.maybe_init_account(revm_db, address);
-        let mut acc = self.accounts.get_mut(&address).unwrap();
+        let acc = self.accounts.get_mut(&address).unwrap();
         if maybe_code.len() > 0 {
             acc.info.code_hash = B256::from_slice(Sha256::digest(maybe_code.as_ref()).as_slice());
             acc.info.code = Some(Bytecode::LegacyRaw(maybe_code.clone()));
@@ -82,17 +82,17 @@ impl StateOverride {
         }
     }
 
-    pub fn override_storage<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, key: U256, new_val: U256, old_val: U256) {
-        self.maybe_init_account(revm_db, address);
-        let mut acc = self.accounts.get_mut(&address).unwrap();
-        acc.storage.insert(key, EvmStorageSlot {
-            original_value: old_val,
-            present_value: new_val,
-            is_cold: false
-        });
-    }
+    // fn override_storage<DB: Database> (&mut self, revm_db: &mut &mut State<DB>, address: Address, key: U256, new_val: U256, old_val: U256) {
+    //     self.maybe_init_account(revm_db, address);
+    //     let acc = self.accounts.get_mut(&address).unwrap();
+    //     acc.storage.insert(key, EvmStorageSlot {
+    //         original_value: old_val,
+    //         present_value: new_val,
+    //         is_cold: false
+    //     });
+    // }
 
-    pub fn apply<DB: Database> (&self, revm_db: &mut &mut State<DB>) {
+    fn apply<DB: Database> (&self, revm_db: &mut &mut State<DB>) {
         revm_db.commit(self.accounts.clone());
     }
 }

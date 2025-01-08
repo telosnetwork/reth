@@ -55,6 +55,9 @@ parking_lot = { workspace = true, optional = true }
 # arbitrary utils
 strum = { workspace = true, features = ["derive"], optional = true }
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [dev-dependencies]
 # reth libs with arbitrary
 reth-primitives = { workspace = true, features = ["arbitrary"] }
@@ -114,6 +117,9 @@ arbitrary = [
 ]
 optimism = ["reth-primitives/optimism", "reth-db-api/optimism"]
 disable-lock = []
+telos = [
+    "dep:reth-telos-primitives-traits",
+]
 
 [[bench]]
 name = "hash_keys"

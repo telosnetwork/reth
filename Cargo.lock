@@ -7729,6 +7729,7 @@ dependencies = [
  "derive_more",
  "reth-primitives 1.1.4",
  "reth-primitives-traits 1.1.4",
+ "reth-telos-primitives-traits",
 ]
 
 [[package]]
@@ -7800,6 +7801,7 @@ dependencies = [
  "reth-prune-types",
  "reth-stages-types",
  "reth-storage-errors 1.1.4",
+ "reth-telos-primitives-traits",
  "reth-tracing",
  "reth-trie-common 1.1.4",
  "rustc-hash 2.1.0",
@@ -7835,6 +7837,7 @@ dependencies = [
  "reth-prune-types",
  "reth-stages-types",
  "reth-storage-errors 1.1.4",
+ "reth-telos-primitives-traits",
  "reth-trie-common 1.1.4",
  "roaring",
  "serde",
@@ -8323,6 +8326,7 @@ dependencies = [
  "reth-ethereum-forks 1.1.4",
  "reth-primitives 1.1.4",
  "reth-primitives-traits 1.1.4",
+ "reth-telos-primitives-traits",
  "serde",
  "thiserror 2.0.5",
 ]
@@ -8350,6 +8354,7 @@ dependencies = [
  "reth-consensus-common",
  "reth-primitives 1.1.4",
  "reth-primitives-traits 1.1.4",
+ "reth-telos-primitives-traits",
  "tracing",
 ]
 
@@ -10173,6 +10178,7 @@ dependencies = [
  "jsonrpsee-types",
  "reth-primitives 1.1.4",
  "reth-primitives-traits 1.1.4",
+ "reth-telos-primitives-traits",
  "serde",
  "serde_json",
 ]

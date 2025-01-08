@@ -128,7 +128,10 @@ min-debug-logs = ["tracing/release_max_level_debug"]
 min-trace-logs = ["tracing/release_max_level_trace"]
 
 telos = [
-    "reth-node-core/telos"
+    "reth-node-core/telos",
+    "reth-consensus/telos",
+    "reth-db-api/telos",
+    "reth-db/telos",
 ]
 
 [[bin]]

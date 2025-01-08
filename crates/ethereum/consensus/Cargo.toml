@@ -25,5 +25,10 @@ alloy-consensus.workspace = true
 
 tracing.workspace = true
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [features]
-telos = []
+telos = [
+    "dep:reth-telos-primitives-traits",
+]

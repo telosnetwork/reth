@@ -24,6 +24,9 @@ alloy-consensus.workspace = true
 auto_impl.workspace = true
 derive_more.workspace = true
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [features]
 default = ["std"]
 std = [
@@ -38,4 +41,7 @@ std = [
 test-utils = [
 	"reth-primitives/test-utils",
 	"reth-primitives-traits/test-utils"
+]
+telos = [
+	"dep:reth-telos-primitives-traits",
 ]
