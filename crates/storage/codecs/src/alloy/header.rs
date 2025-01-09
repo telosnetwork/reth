@@ -1,7 +1,10 @@
 //! Compact implementation for [`AlloyHeader`]
 
 use crate::Compact;
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header as AlloyHeader;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as AlloyHeader;
 use alloy_primitives::{Address, BlockNumber, Bloom, Bytes, B256, U256};
 
 /// Block header

@@ -31,6 +31,9 @@ visibility = { version = "0.1.1", optional = true}
 serde.workspace = true
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
+# telos
+reth-telos-primitives-traits = { workspace = true, optional = true }
+
 [dev-dependencies]
 alloy-eips = { workspace = true, default-features = false, features = [
     "arbitrary",
@@ -92,4 +95,5 @@ arbitrary = [
 ]
 telos = [
     "reth-codecs-derive/telos",
+	"dep:reth-telos-primitives-traits",
 ]

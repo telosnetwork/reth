@@ -7656,6 +7656,7 @@ dependencies = [
  "proptest",
  "proptest-arbitrary-interop",
  "reth-codecs-derive 1.1.4",
+ "reth-telos-primitives-traits",
  "rstest",
  "serde",
  "serde_json",
@@ -10395,6 +10396,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "reth-telos-primitives"
+version = "1.1.4"
+
+[[package]]
 name = "reth-telos-primitives-traits"
 version = "1.1.4"
 dependencies = [
@@ -10410,7 +10415,7 @@ dependencies = [
  "bytes",
  "c-kzg",
  "modular-bitfield",
- "reth-codecs 1.1.4",
+ "reth-telos-primitives",
  "serde",
  "serde_with",
 ]

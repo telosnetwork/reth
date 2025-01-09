@@ -4,7 +4,12 @@ use crate::{
     table::{Compress, Decode, Decompress, Encode},
     DatabaseError,
 };
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use alloy_consensus as _;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_genesis::GenesisAccount;
 use alloy_primitives::{Address, Bytes, Log, B256, U256};
 use reth_codecs::{add_arbitrary_tests, Compact};
