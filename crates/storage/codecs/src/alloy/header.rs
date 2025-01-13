@@ -135,6 +135,8 @@ impl Compact for AlloyHeader {
             requests_hash: header.extra_fields.as_ref().and_then(|h| h.requests_hash),
             extra_data: header.extra_data,
             target_blobs_per_block: header.extra_fields.as_ref().and_then(|h| h.target_blobs_per_block),
+            #[cfg(feature = "telos")]
+            telos_block_extension: Default::default(),
         };
         (alloy_header, buf)
     }

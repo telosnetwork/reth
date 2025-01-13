@@ -19,7 +19,6 @@ reth-primitives = { workspace = true, features = ["reth-codec"] }
 reth-revm.workspace = true
 reth-ethereum-consensus.workspace = true
 reth-consensus.workspace = true
-sha2.workspace = true
 
 # Ethereum
 revm-primitives.workspace = true
@@ -33,6 +32,7 @@ alloy-consensus.workspace = true
 # telos
 reth-telos-rpc-engine-api = { workspace = true, optional = true }
 reth-telos-primitives-traits = { workspace = true, optional = true }
+reth-primitives-traits = { workspace = true, optional = true }
 
 [dev-dependencies]
 reth-testing-utils.workspace = true
@@ -62,4 +62,5 @@ telos = [
     "dep:reth-telos-rpc-engine-api",
     "dep:reth-telos-primitives-traits",
     "reth-ethereum-consensus/telos",
+	"dep:reth-primitives-traits",
 ]

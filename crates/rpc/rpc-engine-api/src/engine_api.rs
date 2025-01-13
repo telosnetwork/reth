@@ -165,10 +165,12 @@ where
     async fn new_payload_v1_metered(
         &self,
         payload: ExecutionPayloadV1,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>
     ) -> EngineApiResult<PayloadStatus> {
         let start = Instant::now();
         let gas_used = payload.gas_used;
-        let res = Self::new_payload_v1(self, payload).await;
+        let res = Self::new_payload_v1(self, payload, #[cfg(feature = "telos")] telos_extra_fields).await;
         let elapsed = start.elapsed();
         self.inner.metrics.latency.new_payload_v1.record(elapsed);
         self.inner.metrics.new_payload_response.update_response_metrics(&res, gas_used, elapsed);
@@ -236,6 +238,7 @@ where
                     versioned_hashes,
                     parent_beacon_block_root,
                 }),
+                #[cfg(feature = "telos")] None
             )
             .await
             .inspect(|_| self.inner.on_new_payload_response())?)
@@ -289,6 +292,7 @@ where
                         target_blobs_per_block: 0,
                     },
                 ),
+                #[cfg(feature = "telos")] None
             )
             .await
             .inspect(|_| self.inner.on_new_payload_response())?)
@@ -758,7 +762,7 @@ where
     /// Caution: This should not accept the `withdrawals` field
     async fn new_payload_v1(&self, payload: ExecutionPayloadV1, #[cfg(feature = "telos")] telos_extra_fields: Option<TelosEngineAPIExtraFields>, #[cfg(not(feature = "telos"))] _telos_extra_fields: Option<TelosEngineAPIExtraFields>) -> RpcResult<PayloadStatus> {
         trace!(target: "rpc::engine", "Serving engine_newPayloadV1");
-        Ok(self.new_payload_v1_metered(payload).await?)
+        Ok(self.new_payload_v1_metered(payload, #[cfg(feature = "telos")] telos_extra_fields).await?)
     }
 
     /// Handler for `engine_newPayloadV2`

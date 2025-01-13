@@ -46,6 +46,10 @@ use tokio::sync::{AcquireError, OwnedSemaphorePermit};
 
 #[cfg(feature = "telos")]
 use reth_telos_primitives_traits::TelosBlockExtension;
+#[cfg(feature = "telos")]
+use reth_provider::BlockReader;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::BlockHeader as RethBlockHeader;
 
 /// `debug` API implementation.
 ///
@@ -173,10 +177,10 @@ where
 
         #[cfg(feature = "telos")]
         let telos_block_extension = self
-                                .inner.provider
-                                .block_by_hash(parent.into())
+                                .provider()
+                                .block_by_hash(block.header().parent_hash())
                                 .unwrap().unwrap()  // TODO: this better
-                                .header.telos_block_extension.to_child();
+                                .header().telos_block_extension().to_child();
 
         // Depending on EIP-2 we need to recover the transactions differently
         let senders =
@@ -233,6 +237,8 @@ where
 
         let block = block.ok_or(EthApiError::HeaderNotFound(block_id))?;
 
+        let telos_block_extension = &block.header.telos_block_extension().clone();
+
         self.trace_block(block, cfg, block_env, opts, #[cfg(feature = "telos")] telos_block_extension).await
     }
 
@@ -249,7 +255,7 @@ where
             Some(res) => res,
         };
         #[cfg(feature = "telos")]
-        let telos_block_extension = block.header.telos_block_extension.clone();
+        let telos_block_extension = block.header.telos_block_extension().clone();
         let (cfg, block_env, _) = self.eth_api().evm_env_at(block.hash().into()).await?;
 
         // we need to get the state of the parent block because we're essentially replaying the
@@ -532,7 +538,7 @@ where
         let GethDebugTracingCallOptions { tracing_options, mut state_overrides, .. } = opts;
 
         #[cfg(feature = "telos")]
-        let telos_block_extension = block.header.telos_block_extension.clone();
+        let telos_block_extension = block.header.telos_block_extension().clone();
 
         // we're essentially replaying the transactions in the block here, hence we need the state
         // that points to the beginning of the block, which is the state at the parent block

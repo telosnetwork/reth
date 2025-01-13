@@ -1,6 +1,10 @@
 //! Support for building a pending block with transactions from local view of mempool.
 
-use alloy_consensus::{constants::EMPTY_WITHDRAWALS, Header, EMPTY_OMMER_ROOT_HASH};
+use alloy_consensus::{constants::EMPTY_WITHDRAWALS, EMPTY_OMMER_ROOT_HASH};
+#[cfg(not(feature = "telos"))]
+use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Header;
 use alloy_eips::{eip7685::EMPTY_REQUESTS_HASH, merge::BEACON_NONCE};
 use alloy_primitives::U256;
 use reth_chainspec::{EthChainSpec, EthereumHardforks};
@@ -99,6 +103,8 @@ where
             parent_beacon_block_root: is_cancun.then_some(B256::ZERO),
             requests_hash: is_prague.then_some(EMPTY_REQUESTS_HASH),
             target_blobs_per_block: None,
+            #[cfg(feature = "telos")]
+            telos_block_extension: Default::default(),
         };
 
         // seal the block

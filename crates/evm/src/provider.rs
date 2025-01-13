@@ -1,7 +1,10 @@
 //! Provider trait for populating the EVM environment.
 
 use crate::ConfigureEvmEnv;
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_eips::BlockHashOrNumber;
 use reth_storage_errors::provider::ProviderResult;
 use revm::primitives::{BlockEnv, CfgEnv, CfgEnvWithHandlerCfg, SpecId};

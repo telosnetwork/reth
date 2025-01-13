@@ -10,6 +10,8 @@ use reth_rpc_api::RethApiServer;
 use reth_rpc_eth_types::{EthApiError, EthResult};
 use reth_tasks::TaskSpawner;
 use tokio::sync::oneshot;
+#[cfg(feature = "telos")]
+use alloy_eips::BlockNumberOrTag;
 
 /// `reth` API implementation.
 ///

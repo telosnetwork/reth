@@ -37,6 +37,10 @@ use revm_inspectors::{
 };
 use std::sync::Arc;
 use tokio::sync::{AcquireError, OwnedSemaphorePermit};
+#[cfg(feature = "telos")]
+use alloy_eips::{BlockHashOrNumber, BlockNumberOrTag};
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Block;
 
 /// `trace` API implementation.
 ///
@@ -123,8 +127,8 @@ where
         let telox_tx_env = self.provider()
                             .block(BlockHashOrNumber::Hash(block_id.unwrap_or_default().as_block_hash().unwrap()))
                             .unwrap().unwrap() // TODO: Fix this
-                            .header
-                            .telos_block_extension
+                            .header()
+                            .telos_block_extension()
                             .tx_env_at(0);
 
         let env = EnvWithHandlerCfg::new_with_cfg_env(
@@ -161,8 +165,8 @@ where
         let telos_tx_env = self.provider()
                             .block(BlockHashOrNumber::Hash(at.as_block_hash().unwrap()))
                             .unwrap().unwrap() // TODO: Fix this
-                            .header
-                            .telos_block_extension
+                            .header()
+                            .telos_block_extension()
                             .tx_env_at(0);
 
         let this = self.clone();

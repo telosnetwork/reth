@@ -155,7 +155,7 @@ impl<N: NodePrimitives> CanonStateNotification<N> {
 
 /// Wrapper around a broadcast receiver that receives fork choice notifications.
 #[derive(Debug, Deref, DerefMut)]
-pub struct ForkChoiceNotifications<T = alloy_consensus::Header>(
+pub struct ForkChoiceNotifications<T = reth_primitives_traits::Header>(
     pub watch::Receiver<Option<SealedHeader<T>>>,
 );
 

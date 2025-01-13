@@ -228,6 +228,8 @@ where
                 .map(ExecutionPayloadSidecar::v3)
                 .unwrap_or_else(ExecutionPayloadSidecar::none),
             tx,
+            #[cfg(feature = "telos")]
+            telos_extra_fields: Default::default(),
         })?;
 
         let res = rx.await??;

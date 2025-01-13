@@ -31,6 +31,8 @@ use reth_provider::{
     ChainSplitTarget, DBProvider, DisplayBlocksChain, HashedPostStateProvider, HeaderProvider,
     ProviderError, StaticFileProviderFactory, StorageLocation,
 };
+#[cfg(feature = "telos")]
+use reth_provider::BlockReader;
 use reth_stages_api::{MetricEvent, MetricEventsSender};
 #[cfg(not(feature = "telos"))]
 use reth_storage_errors::provider::RootMismatch;

@@ -346,8 +346,8 @@ where
     }
 
     if cfg!(feature = "telos") {
-        provider.tx_ref().put::<tables::HeaderNumbers>(block_hash, header.number)?;
-        provider.tx_ref().put::<tables::BlockBodyIndices>(header.number, Default::default())?;
+        provider.tx_ref().put::<tables::HeaderNumbers>(block_hash, header.number())?;
+        provider.tx_ref().put::<tables::BlockBodyIndices>(header.number(), Default::default())?;
 	return Ok(())
     }
 

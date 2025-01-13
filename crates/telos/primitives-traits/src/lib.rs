@@ -12,7 +12,6 @@ pub use block::TelosHeader;
 
 use alloy_primitives::U256;
 use serde::{Deserialize, Serialize};
-use reth_codecs::Compact;
 
 extern crate alloc;
 
@@ -32,7 +31,7 @@ pub mod serde_bincode_compat {
 
 /// Telos block extension fields, included in Headers table as part of Header
 #[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, Compact)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TelosBlockExtension {
     /// Initial gas price for this block
     pub starting_gas_price: U256,
@@ -151,7 +150,7 @@ impl TelosBlockExtension {
 
 /// Telos transaction environment data
 #[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, Compact)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TelosTxEnv {
     /// Gas price for this transaction
     pub gas_price: U256,
@@ -161,7 +160,7 @@ pub struct TelosTxEnv {
 
 /// Telos gas price
 #[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, Compact)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct GasPrice {
     /// Transaction height
     pub height: u64,
@@ -171,7 +170,7 @@ pub struct GasPrice {
 
 /// Telos revision number
 #[cfg_attr(any(test, feature = "arbitrary"), derive(arbitrary::Arbitrary))]
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize, Compact)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Revision {
     /// Transaction height
     pub height: u64,

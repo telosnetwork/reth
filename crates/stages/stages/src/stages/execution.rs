@@ -1,5 +1,9 @@
 use crate::stages::MERKLE_STAGE_DEFAULT_CLEAN_THRESHOLD;
-use alloy_consensus::{BlockHeader, Header};
+use alloy_consensus::BlockHeader;
+#[cfg(not(feature = "telos"))]
+use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Header;
 use alloy_eips::{eip1898::BlockWithParent, NumHash};
 use alloy_primitives::BlockNumber;
 use num_traits::Zero;
@@ -267,7 +271,7 @@ where
 
 impl<E, Provider> Stage<Provider> for ExecutionStage<E>
 where
-    E: BlockExecutorProvider<Primitives: NodePrimitives<BlockHeader = alloy_consensus::Header>>,
+    E: BlockExecutorProvider<Primitives: NodePrimitives<BlockHeader = reth_primitives_traits::Header>>,
     Provider: DBProvider
         + BlockReader<
             Block = <E::Primitives as NodePrimitives>::Block,

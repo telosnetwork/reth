@@ -73,6 +73,7 @@ rayon.workspace = true
 
 # telos
 reth-telos-rpc-engine-api = { workspace = true, optional = true }
+reth-telos-primitives-traits = { workspace = true, optional = true }
 
 [dev-dependencies]
 reth-db = { workspace = true, features = ["test-utils"] }
@@ -140,4 +141,5 @@ test-utils = [
 telos = [
     "revm/telos",
     "dep:reth-telos-rpc-engine-api",
+    "dep:reth-telos-primitives-traits",
 ]

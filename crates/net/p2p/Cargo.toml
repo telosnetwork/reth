@@ -61,3 +61,6 @@ std = [
 	"derive_more/std",
 	"reth-network-peers/std"
 ]
+telos = [
+	"reth-primitives-traits/telos"
+]

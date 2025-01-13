@@ -1,6 +1,10 @@
 //! Stream wrapper that simulates reorgs.
 
-use alloy_consensus::{Header, Transaction};
+use alloy_consensus::Transaction;
+#[cfg(not(feature = "telos"))]
+use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_primitives::U256;
 use alloy_rpc_types_engine::{
     CancunPayloadFields, ExecutionPayload, ExecutionPayloadSidecar, ForkchoiceState, PayloadStatus,

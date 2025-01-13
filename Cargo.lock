@@ -8133,6 +8133,7 @@ dependencies = [
  "reth-payload-primitives",
  "reth-primitives 1.1.4",
  "reth-primitives-traits 1.1.4",
+ "reth-telos-rpc-engine-api 1.1.4",
  "reth-trie",
  "serde",
  "thiserror 2.0.5",
@@ -8502,6 +8503,7 @@ dependencies = [
  "reth-evm",
  "reth-execution-types",
  "reth-primitives 1.1.4",
+ "reth-primitives-traits 1.1.4",
  "reth-revm",
  "reth-telos-primitives-traits",
  "reth-telos-rpc-engine-api 1.1.4",
@@ -8509,7 +8511,6 @@ dependencies = [
  "revm-primitives",
  "secp256k1",
  "serde_json",
- "sha2 0.10.8",
 ]
 
 [[package]]
@@ -9761,6 +9762,7 @@ dependencies = [
  "reth-stages-types",
  "reth-storage-api",
  "reth-storage-errors 1.1.4",
+ "reth-telos-primitives-traits",
  "reth-telos-rpc-engine-api 1.1.4",
  "reth-testing-utils",
  "reth-trie",
@@ -10396,10 +10398,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "reth-telos-primitives"
-version = "1.1.4"
-
-[[package]]
 name = "reth-telos-primitives-traits"
 version = "1.1.4"
 dependencies = [
@@ -10415,7 +10413,6 @@ dependencies = [
  "bytes",
  "c-kzg",
  "modular-bitfield",
- "reth-telos-primitives",
  "serde",
  "serde_with",
 ]

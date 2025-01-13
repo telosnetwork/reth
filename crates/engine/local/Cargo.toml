@@ -53,3 +53,4 @@ optimism = [
     "reth-beacon-consensus/optimism",
     "reth-provider/optimism",
 ]
+telos = []

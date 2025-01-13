@@ -123,4 +123,5 @@ telos = [
     "reth-invalid-block-hooks/telos",
     "reth-payload-validator/telos",
     "reth-rpc-engine-api/telos",
+    "reth-engine-local/telos",
 ]

@@ -133,7 +133,7 @@ impl<Client, Pool, Tasks, Builder> PayloadJobGenerator
     for BasicPayloadJobGenerator<Client, Pool, Tasks, Builder>
 where
     Client: StateProviderFactory
-        + BlockReaderIdExt<Header = alloy_consensus::Header>
+        + BlockReaderIdExt<Header = reth_primitives_traits::Header>
         + Clone
         + Unpin
         + 'static,

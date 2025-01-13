@@ -1,4 +1,4 @@
-use alloy_consensus::Receipt;
+use reth_primitives::Receipt;
 use serde::{Deserialize, Serialize};
 use alloy_primitives::{Address, Bytes, U256};
 

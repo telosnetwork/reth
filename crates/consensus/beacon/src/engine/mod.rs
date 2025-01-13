@@ -1,4 +1,8 @@
-use alloy_consensus::{BlockHeader, Header};
+use alloy_consensus::BlockHeader;
+#[cfg(not(feature = "telos"))]
+use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Header;
 use alloy_eips::{merge::EPOCH_SLOTS, BlockNumHash};
 use alloy_primitives::{BlockNumber, B256};
 use alloy_rpc_types_engine::{

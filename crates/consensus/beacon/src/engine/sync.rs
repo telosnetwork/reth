@@ -4,7 +4,10 @@ use crate::{
     engine::metrics::EngineSyncMetrics, BeaconConsensusEngineEvent,
     ConsensusEngineLiveSyncProgress, EthBeaconConsensus,
 };
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Header;
 use alloy_primitives::{BlockNumber, B256};
 use futures::FutureExt;
 use reth_network_p2p::{

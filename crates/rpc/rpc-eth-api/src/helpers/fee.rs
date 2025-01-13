@@ -12,6 +12,8 @@ use reth_rpc_eth_types::{
     FeeHistoryEntry, GasPriceOracle, RpcInvalidTransactionError,
 };
 use tracing::debug;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::BlockHeader as RethBlockHeader;
 
 use crate::FromEthApiError;
 
@@ -325,7 +327,7 @@ pub trait LoadFee: LoadBlock {
             #[cfg(not(feature = "telos"))]
             let base_fee = header.and_then(|h| h.base_fee_per_gas()).unwrap_or_default();
             #[cfg(feature = "telos")]
-            let base_fee = header.and_then(|h| Some(h.telos_block_extension.get_last_gas_price())).unwrap_or_default();
+            let base_fee = header.and_then(|h| Some(h.telos_block_extension().get_last_gas_price())).unwrap_or_default();
             Ok(suggested_tip + U256::from(base_fee))
         }
     }

@@ -75,7 +75,7 @@ pub trait EstimateCall: Call {
             .unwrap_or(block_env_gas_limit);
 
         // Configure the evm env
-        let mut env = self.build_call_evm_env(cfg, block, request)?;
+        let mut env = self.build_call_evm_env(cfg, block, request, #[cfg(feature = "telos")] Default::default())?;
         let mut db = CacheDB::new(StateProviderDatabase::new(state));
 
         // Apply any state overrides if specified.

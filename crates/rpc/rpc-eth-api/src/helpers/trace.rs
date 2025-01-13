@@ -22,6 +22,8 @@ use revm_inspectors::tracing::{TracingInspector, TracingInspectorConfig};
 use revm_primitives::{
     BlockEnv, CfgEnvWithHandlerCfg, EnvWithHandlerCfg, EvmState, ExecutionResult, ResultAndState,
 };
+#[cfg(feature = "telos")]
+use reth_primitives_traits::BlockHeader as RethBlockHeader;
 
 use super::{Call, LoadBlock, LoadPendingBlock, LoadState, LoadTransaction};
 
@@ -198,7 +200,7 @@ pub trait Trace:
             let (cfg, block_env, _) = self.evm_env_at(block.hash().into()).await?;
 
             #[cfg(feature = "telos")]
-            let telos_block_extension = block.header.telos_block_extension.clone();
+            let telos_block_extension = block.header.telos_block_extension().clone();
 
             // we need to get the state of the parent block because we're essentially replaying the
             // block the transaction is included in
@@ -227,7 +229,7 @@ pub trait Trace:
                     cfg.clone(),
                     block_env.clone(),
                     block_txs,
-                    tx.hash,
+                    *tx.tx_hash(),
                     #[cfg(feature = "telos")]
                     &telos_block_extension,
                 )?;
@@ -334,7 +336,7 @@ pub trait Trace:
             }
 
             #[cfg(feature = "telos")]
-            let telos_block_extension = block.header.telos_block_extension.clone();
+            let telos_block_extension = block.header.telos_block_extension().clone();
 
             // replay all transactions of the block
             self.spawn_tracing(move |this| {

@@ -72,6 +72,8 @@ pub trait Executor<DB> {
         self,
         input: Self::Input<'_>,
         state_hook: F,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         F: OnStateHook + 'static;
@@ -225,6 +227,8 @@ pub trait BlockExecutionStrategy {
         &mut self,
         block: &BlockWithSenders<<Self::Primitives as NodePrimitives>::Block>,
         total_difficulty: U256,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<ExecuteOutput<<Self::Primitives as NodePrimitives>::Receipt>, Self::Error>;
 
     /// Applies any necessary changes after executing the block's transactions.
@@ -233,6 +237,8 @@ pub trait BlockExecutionStrategy {
         block: &BlockWithSenders<<Self::Primitives as NodePrimitives>::Block>,
         total_difficulty: U256,
         receipts: &[<Self::Primitives as NodePrimitives>::Receipt],
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Requests, Self::Error>;
 
     /// Returns a reference to the current state.
@@ -360,14 +366,14 @@ where
         self.strategy.init(env_overrides);
     }
 
-    fn execute(mut self, input: Self::Input<'_>) -> Result<Self::Output, Self::Error> {
+    fn execute(mut self, input: Self::Input<'_>, #[cfg(feature = "telos")] telos_extra_fields: Option<TelosEngineAPIExtraFields>) -> Result<Self::Output, Self::Error> {
         let BlockExecutionInput { block, total_difficulty } = input;
 
         self.strategy.apply_pre_execution_changes(block, total_difficulty)?;
         let ExecuteOutput { receipts, gas_used } =
-            self.strategy.execute_transactions(block, total_difficulty)?;
+            self.strategy.execute_transactions(block, total_difficulty, #[cfg(feature = "telos")] telos_extra_fields.clone())?;
         let requests =
-            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts)?;
+            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts, #[cfg(feature = "telos")] telos_extra_fields.clone())?;
         let state = self.strategy.finish();
 
         Ok(BlockExecutionOutput { state, receipts, requests, gas_used })
@@ -377,6 +383,8 @@ where
         mut self,
         input: Self::Input<'_>,
         mut state: F,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         F: FnMut(&State<DB>),
@@ -385,9 +393,9 @@ where
 
         self.strategy.apply_pre_execution_changes(block, total_difficulty)?;
         let ExecuteOutput { receipts, gas_used } =
-            self.strategy.execute_transactions(block, total_difficulty)?;
+            self.strategy.execute_transactions(block, total_difficulty, #[cfg(feature = "telos")] telos_extra_fields.clone())?;
         let requests =
-            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts)?;
+            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts, #[cfg(feature = "telos")] telos_extra_fields.clone())?;
 
         state(self.strategy.state_ref());
 
@@ -400,6 +408,8 @@ where
         mut self,
         input: Self::Input<'_>,
         state_hook: H,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         H: OnStateHook + 'static,
@@ -410,9 +420,9 @@ where
 
         self.strategy.apply_pre_execution_changes(block, total_difficulty)?;
         let ExecuteOutput { receipts, gas_used } =
-            self.strategy.execute_transactions(block, total_difficulty)?;
+            self.strategy.execute_transactions(block, total_difficulty, #[cfg(feature = "telos")] telos_extra_fields.clone())?;
         let requests =
-            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts)?;
+            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts, #[cfg(feature = "telos")] telos_extra_fields.clone())?;
 
         let state = self.strategy.finish();
 
@@ -465,9 +475,9 @@ where
 
         self.strategy.apply_pre_execution_changes(block, total_difficulty)?;
         let ExecuteOutput { receipts, .. } =
-            self.strategy.execute_transactions(block, total_difficulty)?;
+            self.strategy.execute_transactions(block, total_difficulty, #[cfg(feature = "telos")] None)?;
         let requests =
-            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts)?;
+            self.strategy.apply_post_execution_changes(block, total_difficulty, &receipts, #[cfg(feature = "telos")] None)?;
 
         self.strategy.validate_block_post_execution(block, &receipts, &requests)?;
 

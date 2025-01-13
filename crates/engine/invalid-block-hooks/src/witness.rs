@@ -20,6 +20,8 @@ use reth_tracing::tracing::warn;
 use reth_trie::{updates::TrieUpdates, HashedStorage};
 use serde::Serialize;
 use std::{collections::HashMap, fmt::Debug, fs::File, io::Write, path::PathBuf};
+#[cfg(feature = "telos")]
+use reth_primitives_traits::BlockHeader as RethBlockHeader;
 
 /// Generates a witness for the given block and saves it to a file.
 #[derive(Debug)]
@@ -102,7 +104,7 @@ where
                 tx,
                 tx.recover_signer().ok_or_eyre("failed to recover sender")?,
                 #[cfg(feature = "telos")]
-                parent_header.telos_block_extension.tx_env_at(tx_index),
+                parent_header.telos_block_extension().tx_env_at(tx_index),
             );
             let result = evm.transact()?;
             evm.db_mut().commit(result.state);

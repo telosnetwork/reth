@@ -164,6 +164,8 @@ where
                     }
                 }
             },
+            #[cfg(feature = "telos")]
+            None
         )?;
 
         // update the cached reads

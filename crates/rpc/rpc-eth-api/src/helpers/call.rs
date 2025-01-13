@@ -42,14 +42,14 @@ use reth_rpc_eth_types::{
 use revm::{Database, DatabaseCommit, GetInspector};
 use revm_inspectors::{access_list::AccessListInspector, transfer::TransferInspector};
 use tracing::trace;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::BlockHeader as RethBlockHeader;
 
 /// Result type for `eth_simulateV1` RPC method.
 pub type SimulatedBlocksResult<N, E> = Result<Vec<SimulatedBlock<RpcBlock<N>>>, E>;
 
 #[cfg(feature = "telos")]
 use reth_telos_primitives_traits::{TelosBlockExtension, TelosTxEnv};
-#[cfg(feature = "telos")]
-use reth_provider::BlockIdReader;
 
 /// Execution related functions for the [`EthApiServer`](crate::EthApiServer) trait in
 /// the `eth_` namespace.
@@ -101,7 +101,7 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
                 self.block_with_senders(block).await?.ok_or(EthApiError::HeaderNotFound(block))?;
             let mut parent_hash = base_block.header.hash();
             #[cfg(feature = "telos")]
-            let telos_tx_env = base_block.telos_block_extension.tx_env_at(0);
+            let telos_tx_env = base_block.telos_block_extension().tx_env_at(0);
             let total_difficulty = RpcNodeCore::provider(self)
                 .header_td_by_number(block_env.number.to())
                 .map_err(Self::Error::from_eth_err)?
@@ -309,7 +309,7 @@ pub trait EthCall: EstimateCall + Call + LoadPendingBlock + LoadBlock + FullEthA
                 let mut db = CacheDB::new(StateProviderDatabase::new(state));
 
                 #[cfg(feature = "telos")]
-                let telos_extension = block.header.telos_block_extension.clone();
+                let telos_extension = block.header.telos_block_extension().clone();
                 #[cfg(feature = "telos")]
                 let mut tx_index = 0;
 
@@ -546,20 +546,20 @@ pub trait Call:
         Self: LoadPendingBlock,
     {
         async move {
-            let block_hash = LoadPendingBlock::provider(self)
+            let block_hash = RpcNodeCore::provider(self)
                 .block_hash_for_id(at)
                 .map_err(Self::Error::from_eth_err)?
                 .ok_or_else(|| EthApiError::UnknownBlockOrTxIndex)?;
-            let block_at_result = self.cache().get_block(block_hash).await.map_err(Self::Error::from_eth_err)?;
+            let block_at_result = self.cache().get_sealed_block_with_senders(block_hash).await.map_err(Self::Error::from_eth_err)?;
             let block_at = block_at_result.ok_or_else(|| {
                 EthApiError::UnknownBlockOrTxIndex
             })?;
-            let parent_block_result = self.cache().get_block(block_at.parent_hash).await;
+            let parent_block_result = self.cache().get_sealed_block_with_senders(block_at.parent_hash()).await;
             let parent_block = parent_block_result.unwrap_or(None).ok_or_else(
                 || EthApiError::UnknownBlockOrTxIndex,
             )?;
 
-            Ok(parent_block.header.telos_block_extension.tx_env_at(block_at.body.transactions.len() as u64))
+            Ok(parent_block.header.telos_block_extension().tx_env_at(block_at.body.transactions().len() as u64))
         }
     }
 
@@ -676,7 +676,7 @@ pub trait Call:
             // block the transaction is included in
             let parent_block = block.parent_hash();
             #[cfg(feature = "telos")]
-            let telos_block_extension = block.header.telos_block_extension.clone();
+            let telos_block_extension = block.header.telos_block_extension().clone();
 
             let this = self.clone();
             self.spawn_with_state_at_block(parent_block.into(), move |state| {
@@ -699,7 +699,7 @@ pub trait Call:
                     cfg.clone(),
                     block_env.clone(),
                     block_txs,
-                    tx.hash,
+                    *tx.tx_hash(),
                     &telos_block_extension,
                 )?;
 

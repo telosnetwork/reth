@@ -72,6 +72,8 @@ impl<DB, P: NodePrimitives> Executor<DB> for NoopBlockExecutorProvider<P> {
         self,
         _: Self::Input<'_>,
         _: F,
+        #[cfg(feature = "telos")]
+        _: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         F: OnStateHook,

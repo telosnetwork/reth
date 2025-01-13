@@ -23,7 +23,6 @@ serde_with = { version = "3.3.0", optional = true }
 bytes.workspace = true
 c-kzg = { version = "1.0", features = ["serde"], optional = true, default-features = false }
 modular-bitfield.workspace = true
-reth-codecs = { workspace = true }
 
 [lints]
 workspace = true

@@ -32,3 +32,11 @@ futures.workspace = true
 # misc
 serde.workspace = true
 thiserror.workspace = true
+
+# telos
+reth-telos-rpc-engine-api = { workspace = true, optional = true }
+
+[features]
+telos = [
+    "dep:reth-telos-rpc-engine-api",
+]

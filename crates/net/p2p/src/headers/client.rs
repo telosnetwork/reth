@@ -1,5 +1,8 @@
 use crate::{download::DownloadClient, error::PeerRequestResult, priority::Priority};
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Header;
 use alloy_eips::BlockHashOrNumber;
 use futures::{Future, FutureExt};
 pub use reth_eth_wire_types::{BlockHeaders, HeadersDirection};

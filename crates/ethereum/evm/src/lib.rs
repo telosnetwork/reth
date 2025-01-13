@@ -20,7 +20,10 @@ extern crate alloc;
 use core::convert::Infallible;
 
 use alloc::{sync::Arc, vec::Vec};
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Header;
 use alloy_primitives::{Address, Bytes, TxKind, U256};
 use reth_chainspec::{ChainSpec, Head};
 use reth_evm::{ConfigureEvm, ConfigureEvmEnv, NextBlockEnvAttributes};

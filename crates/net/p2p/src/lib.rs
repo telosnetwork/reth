@@ -55,11 +55,11 @@ impl<T> BlockClient for T where T: HeadersClient + BodiesClient + Unpin + Clone 
 
 /// The [`BlockClient`] providing Ethereum block parts.
 pub trait EthBlockClient:
-    BlockClient<Header = alloy_consensus::Header, Body = reth_primitives::BlockBody>
+    BlockClient<Header = reth_primitives_traits::Header, Body = reth_primitives::BlockBody>
 {
 }
 
 impl<T> EthBlockClient for T where
-    T: BlockClient<Header = alloy_consensus::Header, Body = reth_primitives::BlockBody>
+    T: BlockClient<Header = reth_primitives_traits::Header, Body = reth_primitives::BlockBody>
 {
 }

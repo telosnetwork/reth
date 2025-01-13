@@ -37,6 +37,8 @@ use revm::{db::states::bundle_state::BundleRetention, DatabaseCommit, State};
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tracing::debug;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosTxEnv;
 
 /// Loads a pending block from database.
 ///
@@ -426,9 +428,6 @@ pub trait LoadPendingBlock:
             state_root,
             executed_txs,
             results,
-            #[cfg(feature = "telos")]
-            // Ok to use Default here, as Telos will never build a block in reth
-            telos_block_extension: Default::default(),
         );
 
         Ok((SealedBlockWithSenders { block: block.seal_slow(), senders }, receipts))

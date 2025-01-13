@@ -61,6 +61,7 @@ optimism = [
 ]
 telos = [
     "revm-primitives/telos",
+    "reth-engine-primitives/telos",
     "dep:reth-telos-rpc-engine-api",
-    "dep:reth-telos-primitives-traits"
+    "dep:reth-telos-primitives-traits",
 ]

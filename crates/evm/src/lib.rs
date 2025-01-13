@@ -127,7 +127,7 @@ pub trait ConfigureEvmEnv: Send + Sync + Unpin + Clone + 'static {
     /// Returns a [`TxEnv`] from a transaction and [`Address`].
     fn tx_env(&self, transaction: &Self::Transaction, signer: Address, #[cfg(feature = "telos")] telos_tx_env: TelosTxEnv) -> TxEnv {
         let mut tx_env = TxEnv::default();
-        self.fill_tx_env(&mut tx_env, transaction, signer, #[cfg(feature = "telos")] telos_tx_env: TelosTxEnv);
+        self.fill_tx_env(&mut tx_env, transaction, signer, #[cfg(feature = "telos")] telos_tx_env);
         tx_env
     }
 

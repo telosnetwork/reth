@@ -141,7 +141,7 @@ where
     Provider: DBProvider<Tx: DbTxMut>
         + TrieWriter
         + StatsReader
-        + HeaderProvider<Header = alloy_consensus::Header>
+        + HeaderProvider<Header = reth_primitives_traits::Header>
         + StageCheckpointReader
         + StageCheckpointWriter,
 {

@@ -4,7 +4,9 @@ use crate::{
     dao_fork::{DAO_HARDFORK_BENEFICIARY, DAO_HARDKFORK_ACCOUNTS},
     EthEvmConfig,
 };
-use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use alloc::{boxed::Box, sync::Arc};
+#[cfg(not(feature = "telos"))]
+use alloc::vec::Vec;
 use alloy_consensus::Transaction as _;
 use alloy_eips::eip7685::Requests;
 use core::fmt::Display;
@@ -35,8 +37,6 @@ use reth_telos_rpc_engine_api::compare::compare_state_diffs;
 use revm_primitives::{Address, Account, AccountInfo, AccountStatus, Bytecode, HashMap, KECCAK_EMPTY};
 #[cfg(feature = "telos")]
 use alloy_primitives::B256;
-#[cfg(feature = "telos")]
-use sha2::{Sha256, Digest};
 
 /// Factory for [`EthExecutionStrategy`].
 #[derive(Debug, Clone)]
@@ -74,7 +74,7 @@ where
         + Send
         + 'static
         + ConfigureEvm<
-            Header = alloy_consensus::Header,
+            Header = reth_primitives_traits::Header,
             Transaction = reth_primitives::TransactionSigned,
         >,
 {
@@ -125,7 +125,7 @@ where
 impl<DB, EvmConfig> EthExecutionStrategy<DB, EvmConfig>
 where
     DB: Database<Error: Into<ProviderError> + Display>,
-    EvmConfig: ConfigureEvm<Header = alloy_consensus::Header>,
+    EvmConfig: ConfigureEvm<Header = reth_primitives_traits::Header>,
 {
     /// Configures a new evm configuration and block environment for the given block.
     ///
@@ -134,7 +134,10 @@ where
     /// This does not initialize the tx environment.
     fn evm_env_for_block(
         &self,
+        #[cfg(not(feature = "telos"))]
         header: &alloy_consensus::Header,
+        #[cfg(feature = "telos")]
+        header: &reth_telos_primitives_traits::TelosHeader,
         total_difficulty: U256,
     ) -> EnvWithHandlerCfg {
         let (cfg, block_env) = self.evm_config.cfg_and_block_env(header, total_difficulty);
@@ -146,7 +149,7 @@ impl<DB, EvmConfig> BlockExecutionStrategy for EthExecutionStrategy<DB, EvmConfi
 where
     DB: Database<Error: Into<ProviderError> + Display>,
     EvmConfig: ConfigureEvm<
-        Header = alloy_consensus::Header,
+        Header = reth_primitives_traits::Header,
         Transaction = reth_primitives::TransactionSigned,
     >,
 {
@@ -181,6 +184,8 @@ where
         &mut self,
         block: &BlockWithSenders,
         total_difficulty: U256,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<ExecuteOutput<Receipt>, Self::Error> {
         let env = self.evm_env_for_block(&block.header, total_difficulty);
         let mut evm = self.evm_config.evm_with_env(&mut self.state, env);
@@ -191,38 +196,7 @@ where
         let unwrapped_telos_extra_fields = telos_extra_fields.unwrap_or_default();
         #[cfg(feature = "telos")]
         let mut new_addresses_using_create_iter = unwrapped_telos_extra_fields.new_addresses_using_create.as_ref().unwrap().into_iter().peekable();
-        // #[cfg(feature = "telos")]
-        // let parent_telos_ext;
-        // #[cfg(feature = "telos")]
-        // {
-        //     let parent_hash = block.block.header.parent_hash;
-        //     let block_by_hash =
-        //     if let Some(block_by_hash) = block_by_hash.unwrap() {
-        //         parent_telos_ext = block_by_hash.header.telos_block_extension;
-        //     } else {
-        //         let sidechain_block = self.sidechain_block_by_hash(parent_hash);
-        //         if let Some(sidechain_block) = sidechain_block {
-        //             parent_telos_ext = sidechain_block.header.telos_block_extension.clone();
-        //         } else {
-        //             panic!("Parent block not found");
-        //         }
-        //     };
-        // }
 
-        // #[cfg(feature = "telos")]
-        // let block = BlockWithSenders {
-        //     block: reth_primitives::Block {
-        //         header: block.block.header.clone_with_telos(
-        //             parent_telos_ext,
-        //             unwrapped_telos_extra_fields.gasprice_changes,
-        //             unwrapped_telos_extra_fields.revision_changes,
-        //         ),
-        //         body: block.block.body.clone(),
-        //     },
-        //     senders: block.senders,
-        // };
-
-        // execute transactions
         let mut cumulative_gas_used = 0;
         #[cfg(not(feature = "telos"))]
         let mut receipts = Vec::with_capacity(block.body.transactions.len());
@@ -288,6 +262,14 @@ where
                 },
             );
         }
+
+        #[cfg(feature = "telos")]
+        let receipts = if unwrapped_telos_extra_fields.receipts.is_some() {
+            unwrapped_telos_extra_fields.receipts.clone().unwrap()
+        } else {
+            vec![]
+        };
+
         Ok(ExecuteOutput { receipts, gas_used: cumulative_gas_used })
     }
 
@@ -296,9 +278,16 @@ where
         block: &BlockWithSenders,
         total_difficulty: U256,
         receipts: &[Receipt],
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Requests, Self::Error> {
         let env = self.evm_env_for_block(&block.header, total_difficulty);
         let mut evm = self.evm_config.evm_with_env(&mut self.state, env);
+
+        #[cfg(feature = "telos")]
+        let unwrapped_telos_extra_fields = telos_extra_fields.unwrap_or_default();
+        #[cfg(feature = "telos")]
+        let mut new_addresses_using_create_iter = unwrapped_telos_extra_fields.new_addresses_using_create.as_ref().unwrap().into_iter().peekable();
 
         #[cfg(feature = "telos")]
         while new_addresses_using_create_iter.peek().is_some() {
@@ -328,13 +317,6 @@ where
                 )
             );
         }
-
-        #[cfg(feature = "telos")]
-        let receipts = if unwrapped_telos_extra_fields.receipts.is_some() {
-            unwrapped_telos_extra_fields.receipts.clone().unwrap()
-        } else {
-            vec![]
-        };
 
         let requests = if self.chain_spec.is_prague_active_at_timestamp(block.timestamp) {
             // Collect all EIP-6110 deposits

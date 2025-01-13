@@ -97,4 +97,5 @@ optimism = [
 ]
 telos = [
     "dep:reth-telos-rpc-engine-api",
+    "reth-network-p2p/telos",
 ]

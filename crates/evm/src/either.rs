@@ -96,6 +96,8 @@ where
         self,
         input: Self::Input<'_>,
         state_hook: F,
+        #[cfg(feature = "telos")]
+        telos_extra_fields: Option<TelosEngineAPIExtraFields>,
     ) -> Result<Self::Output, Self::Error>
     where
         F: OnStateHook + 'static,

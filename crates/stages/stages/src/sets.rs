@@ -215,7 +215,7 @@ where
 impl<P, H, B> OnlineStages<P, H, B>
 where
     P: HeaderSyncGapProvider + 'static,
-    H: HeaderDownloader<Header = alloy_consensus::Header> + 'static,
+    H: HeaderDownloader<Header = reth_primitives_traits::Header> + 'static,
     B: BodyDownloader + 'static,
 {
     /// Create a new builder using the given headers stage.

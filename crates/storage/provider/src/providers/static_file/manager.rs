@@ -7,7 +7,10 @@ use crate::{
     ReceiptProvider, StageCheckpointReader, StatsReader, TransactionVariant, TransactionsProvider,
     TransactionsProviderExt, WithdrawalsProvider,
 };
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_telos_primitives_traits::TelosHeader as Header;
 use alloy_eips::{
     eip2718::Encodable2718,
     eip4895::{Withdrawal, Withdrawals},
