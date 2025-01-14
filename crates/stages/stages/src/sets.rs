@@ -258,7 +258,7 @@ where
 impl<Provider, P, H, B> StageSet<Provider> for OnlineStages<P, H, B>
 where
     P: HeaderSyncGapProvider + 'static,
-    H: HeaderDownloader<Header = alloy_consensus::Header> + 'static,
+    H: HeaderDownloader<Header = reth_primitives_traits::Header> + 'static,
     B: BodyDownloader + 'static,
     HeaderStage<P, H>: Stage<Provider>,
     BodyStage<B>: Stage<Provider>,

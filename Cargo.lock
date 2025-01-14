@@ -10403,6 +10403,7 @@ version = "1.1.4"
 dependencies = [
  "alloy-consensus 0.7.3",
  "alloy-eips 0.7.3",
+ "alloy-network-primitives 0.7.3",
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rpc-types",

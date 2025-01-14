@@ -23,6 +23,8 @@ use revm::{
 };
 use revm_primitives::{EnvKzgSettings, EnvWithHandlerCfg, SpecId, MAX_BLOB_GAS_PER_BLOCK};
 use std::sync::Arc;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::BlockHeader as RethBlockHeader;
 
 /// `Eth` bundle implementation.
 pub struct EthBundle<Eth> {
@@ -176,11 +178,11 @@ where
         {
             let parent_block = block_env.number.saturating_to::<u64>();
             // here we need to fetch the _next_ block's basefee based on the parent block <https://github.com/flashbots/mev-geth/blob/fddf97beec5877483f879a77b7dea2e58a58d653/internal/ethapi/api.go#L2130>
-            let parent = LoadPendingBlock::provider(&self.inner.eth_api)
+            let parent = RpcNodeCore::provider(self.eth_api())
                 .header_by_number(parent_block)
                 .map_err(Eth::Error::from_eth_err)?
                 .ok_or_else(|| EthApiError::UnknownBlockOrTxIndex)?;
-            telos_block_extension = parent.telos_block_extension.to_child();
+            telos_block_extension = parent.telos_block_extension().to_child();
         }
 
         self.eth_api()

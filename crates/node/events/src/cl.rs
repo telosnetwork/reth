@@ -1,6 +1,9 @@
 //! Events related to Consensus Layer health.
 
+#[cfg(not(feature = "telos"))]
 use alloy_consensus::Header;
+#[cfg(feature = "telos")]
+use reth_primitives_traits::Header;
 use futures::Stream;
 use reth_storage_api::CanonChainTracker;
 use std::{

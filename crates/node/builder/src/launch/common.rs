@@ -60,6 +60,8 @@ use tokio::sync::{
     mpsc::{unbounded_channel, UnboundedSender},
     oneshot, watch,
 };
+#[cfg(feature = "telos")]
+use alloy_consensus as _;
 
 /// Reusable setup for launching a node.
 ///
@@ -719,7 +721,7 @@ where
     /// necessary
     pub async fn max_block<C>(&self, client: C) -> eyre::Result<Option<BlockNumber>>
     where
-        C: HeadersClient<Header = alloy_consensus::Header>,
+        C: HeadersClient<Header = reth_primitives::Header>,
     {
         self.node_config().max_block(client, self.provider_factory().clone()).await
     }

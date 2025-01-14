@@ -38,3 +38,6 @@ tracing.workspace = true
 # misc
 pin-project.workspace = true
 humantime.workspace = true
+
+[features]
+telos = []

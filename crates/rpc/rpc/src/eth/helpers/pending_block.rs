@@ -32,7 +32,7 @@ impl<Provider, Pool, Network, EvmConfig> LoadPendingBlock
     for EthApi<Provider, Pool, Network, EvmConfig>
 where
     Self: SpawnBlocking<
-            NetworkTypes: alloy_network::Network<HeaderResponse = alloy_rpc_types_eth::Header>,
+            NetworkTypes: alloy_network::Network<HeaderResponse = alloy_rpc_types_eth::Header<reth_telos_primitives_traits::TelosHeader>>,
         > + RpcNodeCore<
             Provider: BlockReaderIdExt<
                 Transaction = reth_primitives::TransactionSigned,

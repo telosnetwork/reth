@@ -17,6 +17,7 @@ alloy-rlp = { version = "0.3", default-features = false }
 alloy-rpc-types = { workspace = true }
 alloy-serde = { version = "0.4", optional = true, default-features = false }
 alloy-trie = { workspace = true }
+alloy-network-primitives = { workspace = true }
 auto_impl = { version = "1.2" }
 serde = { version = "1.0", features = ["derive", "alloc"], optional = true, default-features = false }
 serde_with = { version = "3.3.0", optional = true }
